@@ -52,7 +52,7 @@ Each of the following lines represents a single CpG in the genome. The first thr
 | :-----------|:--------| :------|
 | Chromosome (alphanumeric) | Position of CpG (integer) | strand of CpG ("+" or "-") |   
 
-All following fields contain the count data. *For each sample, there are four fields*, i.e. two for each sequencing run:
+All following fields contain the count data. **For each sample, there are four fields**, i.e. two for each sequencing run:
 
 |  ID of BS-seq (coverage)                           | ID of BS-Seq (non-conversion)       | ID of oxBS-seq (coverage)  | ID of BS-Seq (non-conversion) |
 | :---------------------------------------------------| :------------------------------------| :---------------------------| :----------------------------- |
@@ -73,29 +73,29 @@ Hydi returns the results in a tab-separated text file. Each line represents a si
 frist three fields hold their respective coordinates (see input data). The following fields 18 fields are
 described in the following table
 
-|field      | description |
-|:----------|-------------|
-| 4         | lower bound of confidence interval of the 5hmC-level (G1) |
-| 5         | maximum likelihood estimate of 5hmC-level (G1) |
-| 6         | upper bound of confidence interval of the 5hmC-level (G1) |
-| 7         | p-value for test of absence of hydroxymetylation/overshoots (G1) |
-| 8         | fdr corrected p-value for test of absence (G1) |
-|           |                   |
-| 9         | lower bound of confidence interval of the 5hmC-level (G2) |
-| 10        | maximum likelihood estimate of 5hmC-level in (G2) |
-| 11        | upper bound of confidence interval of the 5hmC-level (G2) |
-| 12        | p-value for test of absence of hydroxymetylation/overshoots (G2) |
-| 13        | fdr corrected p-value for test of absence (G2) |
-|           |              |
-| 14        | overshoot flag (0: no overshoot; 1:overshoot G1; 2:overshoot G2; 3: overshoot G1 & G2) |
-| 15        | 5hmC flag (0: no 5hmC; 1:5hmC in G1; 2:5hmC in G2; 3: 5hmC in G1 & G2) |
+|field      | name  | description |
+|:----------|-------|-------|
+| 4         | cil1  | lower bound of confidence interval of the 5hmC-level (G1) |
+| 5         | ml1   | maximum likelihood estimate of 5hmC-level (G1) |
+| 6         | ciu1  | upper bound of confidence interval of the 5hmC-level (G1) |
+| 7         | pval1 | p-value for test of absence of hydroxymetylation/overshoots (G1) |
+| 8         | fdr1  | fdr corrected p-value for test of absence (G1) |
+|           |       |                 |
+| 9         | cil2  | lower bound of confidence interval of the 5hmC-level (G2) |
+| 10        | ml2   | maximum likelihood estimate of 5hmC-level in (G2) |
+| 11        | ciu2  | upper bound of confidence interval of the 5hmC-level (G2) |
+| 12        | pval2 | p-value for test of absence of hydroxymetylation/overshoots (G2) |
+| 13        | fdr2  | fdr corrected p-value for test of absence (G2) |
+|           |       |
+| 14        | overshoot   | flag (**0**: no overshoot; **1**:overshoot G1; **2**:overshoot G2; **3**: overshoot G1 & G2) |
+| 15        | 5hmC        | flag (**0**: no 5hmC; **1**:5hmC in G1; **2**:5hmC in G2; **3**: 5hmC in G1 & G2) |
 |           |             |
-| 16        | lower bound of confidence interval of 5hmC differences between G1 and G2|     
-| 17        | maximum likelihood estimate of 5hmC differences between G1 and G2 |     
-| 18        | upper bound likelihood estimate of difference of 5hmC-levels between G1 and G2 |    
-| 19        | p-value for test on equality of hydroxymethylation in G1 and G2 |
-| 20        | fdr corrected p-value for test on equality in G1 and G2|
-| 21        | estimated minimum difference of hydroxymethylation between G1 and G2 | 
+| 16        | cil_diff | lower bound of confidence interval of 5hmC differences between G1 and G2|     
+| 17        | ml_diff |maximum likelihood estimate of 5hmC differences between G1 and G2 |     
+| 18        | ciu_diff | upper bound likelihood estimate of difference of 5hmC-levels between G1 and G2 |    
+| 19        | pval_diff | p-value for test on equality of hydroxymethylation in G1 and G2 |
+| 20        | fdr_diff | fdr corrected p-value for test on equality in G1 and G2|
+| 21        | est_mindiff | estimated minimum difference of hydroxymethylation between G1 and G2 | 
 
 
 An example output line looks like this:
@@ -105,3 +105,10 @@ chr1	434286	+	-0.069985	0.013117	0.096011	0.752027	0.977618	-0.087720	0.015558	0
 70594	1.000000	0.000000
 ```
 
+
+
+## Example
+
+```
+./hydi.x -a examples/G1.txt.gz -b examples/G2.txt.gz > examples/test.out
+```
