@@ -56,22 +56,17 @@ usage: ./hydi.x [-a <file>] [-b <file>] [-o <file>] [-m] [-p] [-e]
  -e, --epsilon        precision of numerical approximation (default:1.000000e-06)
 ```
 
-### Input files
+### Input and output files
 
 | parameter  | description      |
 |----------- |-------------------------------------|
-| group1     | formated input file for the first group (G1). The format is described below. | 
-| group2     | formated input file for the second group (G2). The format is described below. | 
+| group1     | formated input file for the 1st group (G1). The format is described below.                      | 
+| group2     | formated input file for the 2nd group (G2). The format is described below.                      | 
+| output     | path or filename for the output. If option is omitted, the output will be dumped to standard output  |
 
 Please note, the assignment of the sample files to the groups matter. The calculation of estimates and confidence intervals for hydroxymethylation uses G1 as a reference. Thus, negative values
 indicate a loss of hydroxymethylation in G1 as compared to G2. Conversely, positive values indicate a gain of hydroxymethylation G1. In a comparison of a group of cancer samples versus healthy controls, for instance, it is thus
 recommendable to assign the cancer data to G1 to make the data easier to interpret.
-
-### Output
-
-| parameter  | description      |
-|----------- |-------------------------------------|
-| output     | path or filename for the output. If option is omitted, the output will be dumped to stdout |
 
 ### Control
 
@@ -83,10 +78,6 @@ recommendable to assign the cancer data to G1 to make the data easier to interpr
 
 Please note, while increasing maxiter and decreasing epsilon may provide a better precision, the runtime of hydi may be affected substantially. Convienience flags of hydis output are set based on the value of `alpha`. Furthermore, hydi calculates `1-alpha` confidence intervals.
 
-### Complaint department
-
-steve bioinf uni leipzig de
-
 
 ## Input data format
 
@@ -97,15 +88,18 @@ the count data obtained from the individual sequencing runs in a specific order.
 The first line is a header line with column descriptions and sample identifiers. 
 Each of the following lines represents a single CpG in the genome. The first three fields of each line specifiy the coordinates of the CpG.
 
-| chrom      | pos      | strand | 
-| :-----------|:--------| :------|
-| Chromosome (alphanumeric) | Position of CpG (integer) | strand of CpG ("+" or "-") |   
 
 All following fields contain the count data. **For each sample, there are four fields**, i.e. two for each sequencing run:
 
-|  ID of BS-seq (coverage)                           | ID of BS-Seq (non-conversion)       | ID of oxBS-seq (coverage)  | ID of BS-Seq (non-conversion) |
-| :---------------------------------------------------| :------------------------------------| :---------------------------| :----------------------------- |
-| number of reads aligned to coordinate in BS-Seq | number of non-converted Cs at coordinate in BS-Seq | number of reads aligned to coordinate in oxBS-Seq | number of non-converted Cs at coordinate in oxBS-Seq |   
+|  column  | description |
+| :---------------------------------------------------| :------------------------------------| 
+| chrom                            | chromosome (alphanumeric) | 
+| pos                              | position of CpG (integer) | 
+| strand                           | strand of CpG ("+" or "-") |   
+| ID of BS-seq (coverage)          |  number of reads aligned to coordinate in BS-Seq | 
+| ID of BS-Seq (non-conversion)    | number of non-converted Cs at coordinate in BS-Seq | 
+| ID of oxBS-seq (coverage)        |  number of reads aligned to coordinate in oxBS-Seq | 
+| ID of BS-Seq (non-conversion)    | number of non-converted Cs at coordinate in oxBS-Seq |   
 
 where BS and oxBS denote the two distinct treatments briefly described above. For a two samples, 
 
@@ -123,7 +117,7 @@ frist three fields hold their respective coordinates (see input data). The follo
 described in the following table
 
 |field      | name  | description |
-|:----------|-------|-------|
+|:----------|:-------|:-------|
 | 4         | cil1  | lower bound of confidence interval of the 5hmC-level (G1) |
 | 5         | ml1   | maximum likelihood estimate of 5hmC-level (G1) |
 | 6         | ciu1  | upper bound of confidence interval of the 5hmC-level (G1) |
@@ -191,3 +185,9 @@ awk '{if(NR == 1 || $15 == 3) print }' examples/output.txt > examples/output.5hm
 ```
 ./hydi.x -a examples/G1.txt.gz -b examples/G2.txt.gz > examples/test.out
 ```
+
+### Complaint department
+
+steve bioinf uni leipzig de
+
+
