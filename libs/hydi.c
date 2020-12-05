@@ -17,7 +17,6 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_roots.h>
 #include <gsl/gsl_sf_gamma.h>
-#include <pthread.h>
 #include <zlib.h>
 
 #include "basic-types.h"
