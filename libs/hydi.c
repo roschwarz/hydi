@@ -17,7 +17,6 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_roots.h>
 #include <gsl/gsl_sf_gamma.h>
-#include <pthread.h>
 #include <zlib.h>
 
 #include "basic-types.h"
@@ -1247,7 +1246,7 @@ void hydi_fileclose(circbuffer_t *buf) {
 void hydi_output(FILE *dev, char *chrom, uint64_t pos, char strand,
     hydi_test_t *t, uint32_t overshoot, uint32_t hmC) {
 
-  
+ 
   fprintf(dev, "%s\t%ld\t%c\t", chrom, pos, strand);
   fprintf(dev, "%f\t%f\t%f\t",t->cil1, t->est1, t->cir1);
   fprintf(dev, "%Lf\t%Lf\t", t->pval[0], t->fdr[0]);
@@ -1279,8 +1278,7 @@ void hydi_iter(FILE *dev, char* fn1, char* fn2, uint32_t minrep,
   VStack p_A1_; 
   
   chialphahalf = gsl_cdf_chisq_Qinv(alpha, 1);
-  chialphahalf *= 0.5;
-  fprintf(stderr, "%f\n", chialphahalf);
+  chialphahalf *= 0.5; 
 
   bl_vstackInit(&p_A1_, 10000, sizeof(hydi_test_t));
  
@@ -1337,6 +1335,9 @@ void hydi_iter(FILE *dev, char* fn1, char* fn2, uint32_t minrep,
   hydi_fileopen(&buf2, fn2); 
 
   count = 0;
+
+  //write header
+  fprintf(dev, "chrom\tpos\tstrand\tcil1\tml1\tciu1\tpval1\tfdr1\tcil2\tml2\tciu2\tpval2\tfdr2\tovershoot\t5hmC\tcil_diff\tml_diff\tciu_diff\tpval_diff\tfdr_diff\test_mindiff\n");
 
   while ((str1 = bl_circBufferReadLine(&buf1, &len1)) != NULL &&
       (str2 = bl_circBufferReadLine(&buf2, &len2)) != NULL) {
@@ -1417,10 +1418,10 @@ int main(int argc, char *argv[]) {
   manopt_blockseparator(&optset, "INPUT");
 
   manopt(&optset, REQSTRINGOPT, 0, 'a', "group1", 
-      "path/filename of query sequences", "<file>", NULL, &fn1);
+      "path/filename of count file for group 1", "<file>", NULL, &fn1);
  
   manopt(&optset, REQSTRINGOPT, 0, 'b', "group2", 
-      "path/filename of query sequences", "<file>", NULL, &fn2);
+      "path/filename of count file for group 2", "<file>", NULL, &fn2);
 
   /*
   manopt(&optset, REQINTOPT, 0, 'g', "factorial", 
