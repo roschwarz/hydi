@@ -76,7 +76,7 @@ recommendable to assign the cancer data to G1 to make the data easier to interpr
 | alpha      | parameter controlling the level of confidence intervals and used for flags | 
 | epsilon    | parameter controlling the numerical precision of all calculations | 
 
-Please note, while increasing maxiter and decreasing epsilon may provide a better precision, the runtime of hydi may be affected substantially. Convienience flags of hydis output are set based on the value of `alpha`. Furthermore, hydi calculates `1-alpha` confidence intervals.
+Please note, while increasing maxiter and decreasing epsilon may provide a better precision, the runtime of hydi may be affected substantially. Convenience flags of hydis output are set based on the value of `alpha`. Furthermore, hydi calculates `1-alpha` confidence intervals.
 
 
 ## Input data format
@@ -86,7 +86,7 @@ oxRRBS or oxWGBS sequencing experiments. For each group, hydi needs to be given 
 the count data obtained from the individual sequencing runs in a specific order. 
 
 The first line is a header line with column descriptions and sample identifiers. 
-Each of the following lines represents a single CpG in the genome. The first three fields of each line specifiy the coordinates of the CpG.
+Each of the following lines represents a single CpG in the genome. The first three fields of each line specify the coordinates of the CpG.
 
 
 All following fields contain the count data. **For each sample, there are four fields**, i.e. two for each sequencing run:
@@ -96,6 +96,7 @@ All following fields contain the count data. **For each sample, there are four f
 | chrom                            | chromosome (alphanumeric) | 
 | pos                              | position of CpG (integer) | 
 | strand                           | strand of CpG ("+" or "-") |   
+|                                  |                            |
 | ID of BS-seq (coverage)          |  number of reads aligned to coordinate in BS-Seq | 
 | ID of BS-Seq (non-conversion)    | number of non-converted Cs at coordinate in BS-Seq | 
 | ID of oxBS-seq (coverage)        |  number of reads aligned to coordinate in oxBS-Seq | 
@@ -113,7 +114,7 @@ Running examples are provided with the code.
 ## Output data
 
 Hydi returns the results in a tab-separated text file. Each line represents a single genomic CpGs and summarizes the test data for group 1 (G1) and group 2 (G2). The
-frist three fields hold their respective coordinates (see input data). The following fields 18 fields are
+first three fields hold their respective coordinates (see input data). The following fields 18 fields are
 described in the following table
 
 |field      | name  | description |
@@ -142,7 +143,7 @@ described in the following table
 
 
 All confidence interval bounds and estimates are given as rates, i.e. on the interval of [0,1]. Confidence intervals are calculated to the `1-alpha`-level. 
-The convienience flag `overshoot` is set for one or both groups if the maximum likelihood estimate for 5hmC is negative and significantly different from 0 (based on the chosen `alpha`).
+The convenience flag `overshoot` is set for one or both groups if the maximum likelihood estimate for 5hmC is negative and significantly different from 0 (based on the chosen `alpha`).
 Similarly, the `5hmC`-flag is set for one or both groups if the estimates are positive and significantly different from 0 (base on the chosen `alpha`). 
 
 An example output line looks like this:
@@ -156,7 +157,7 @@ chr1	434286	+	-0.069985	0.013117	0.096011	0.752027	0.977618	-0.087720	0.015558	0
 
 ### Analysis of differential 5hmC
 
-For the analysis of differential hydroxymethylation it is recommended to filter out all CpGs with overshoots, i.e. a statitically significant
+For the analysis of differential hydroxymethylation it is recommended to filter out all CpGs with overshoots, i.e. a statistically significant
 **negative** methylation. This effect may be caused by coverage or alignment problems. To do this, the convenience flag `overshoot` (field 14) may be
 used. This can be done, for instance, by calling
 
@@ -164,16 +165,16 @@ used. This can be done, for instance, by calling
 awk '{if(NR == 1 || $14 == 0) print }' examples/output.txt > examples/output.noovershoot.txt
 ```
 
-For all downstream analyses it is recommended to filter the data for a desired fdr cutoff, e.g. fdr <= 0.1, using `fdr_diff` (field 20) and to use the convienience field `est_mindiff` (field 21) to eliminate biologically irrelevant differences. Both values are calculated based on the difference p-value (field 19) and the confidence interval (field 16-18), respectively. For instance, the shell command
+For all downstream analyses it is recommended to filter the data for a desired fdr cutoff, e.g. fdr <= 0.1, using `fdr_diff` (field 20) and to use the convenience field `est_mindiff` (field 21) to eliminate biologically irrelevant differences. Both values are calculated based on the difference p-value (field 19) and the confidence interval (field 16-18), respectively. For instance, the shell command
 
 ```{sh}
 awk '{if(NR == 1 || ($14 == 0 && $20 <= 0.1 && $21 >= 0.1)) print }' examples/output.txt > examples/output.noovershoot.filtered.txt
 ```
-extracts all sites without significant overshoots, significant fdr-corrected differenital hydroxymethylation and a minimum difference of at least 0.1.   
+extracts all sites without significant overshoots, significant fdr-corrected differential hydroxymethylation and a minimum difference of at least 0.1.   
 
 ### Analysis of 5hmC 
 
-If hydi is used for indentifying 5hmCs in either group, the convienience flag `5hmC` (field 15) may come in handy. For instance, to identify
+If hydi is used for identifying 5hmCs in either group, the convenience flag `5hmC` (field 15) may come in handy. For instance, to identify
 sites that are hydroxymethylated in both groups run
 
 ```{sh}
