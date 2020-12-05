@@ -69,40 +69,36 @@ Running examples are provided with the code.
 
 ## Output data
 
-Hydi returns the results in a tab-separated text file. Each line represents a single genomic CpGs and the first three fields give their coordinates
-
-| chrom      | pos      | strand | 
-| :-----------|:--------| :------|
-| Chromosome (alphanumeric) | Position of CpG (integer) | strand of CpG ("+" or "-") |   
-
-
-The following fields 19 fields are as follows
+Hydi returns the results in a tab-separated text file. Each line represents a single genomic CpGs and summarizes the test data for group 1 (G1) and group 2 (G2). The
+frist three fields hold their respective coordinates (see input data). The following fields 18 fields are
+described in the following table
 
 |field      | description |
 |:----------|-------------|
-| 4         | lower bound of confidence interval of the 5hmC-level in group 1 |
-| 5         | maximum likelihood estimate of 5hmC-level in group 1 |
-| 6         | upper bound of confidence interval of the 5hmC-level in group 1 |
-| 7         | p-value for test of absence of hydroxymetylation/overshoots in group 1 |
-| 8         | fdr corrected p-value for test of absence in group 1 |
+| 4         | lower bound of confidence interval of the 5hmC-level (G1) |
+| 5         | maximum likelihood estimate of 5hmC-level (G1) |
+| 6         | upper bound of confidence interval of the 5hmC-level (G1) |
+| 7         | p-value for test of absence of hydroxymetylation/overshoots (G1) |
+| 8         | fdr corrected p-value for test of absence (G1) |
 |           |                   |
-| 9         | lower bound of confidence interval of the 5hmC-level in group 2 |
-| 10        | maximum likelihood estimate of 5hmC-level in group 2 |
-| 11        | upper bound of confidence interval of the 5hmC-level in group 2 |
-| 12        | p-value for test of absence of hydroxymetylation/overshoots in group 2 |
-| 13        | fdr corrected p-value for test of absence in group 2 |
+| 9         | lower bound of confidence interval of the 5hmC-level (G2) |
+| 10        | maximum likelihood estimate of 5hmC-level in (G2) |
+| 11        | upper bound of confidence interval of the 5hmC-level (G2) |
+| 12        | p-value for test of absence of hydroxymetylation/overshoots (G2) |
+| 13        | fdr corrected p-value for test of absence (G2) |
 |           |              |
-| 14        | overshoot flag (0: no overshoot; 1:overshoot in group 1; 2:overshoot in group 2; 3: overshoot in both groups) |
-| 15        | 5hmC flag (0: no 5hmC; 1:5hmC in group 1; 2:5hmC in group 2; 3: 5hmC in both groups) |
+| 14        | overshoot flag (0: no overshoot; 1:overshoot G1; 2:overshoot G2; 3: overshoot G1 & G2) |
+| 15        | 5hmC flag (0: no 5hmC; 1:5hmC in G1; 2:5hmC in G2; 3: 5hmC in G1 & G2) |
 |           |             |
-| 16        | lower bound of confidence interval of 5hmC differences between both groups|     
-| 17        | maximum likelihood estimate of 5hmC differences between both groups |     
-| 18        | upper bound likelihood estimate of difference of 5hmC-levels |    
-| 19        | p-value for test on equality of hydroxymethylation |
-| 20        | fdr corrected p-value for test on equality |
-| 21        | estimated minimum difference of hydroxymethylation | 
+| 16        | lower bound of confidence interval of 5hmC differences between G1 and G2|     
+| 17        | maximum likelihood estimate of 5hmC differences between G1 and G2 |     
+| 18        | upper bound likelihood estimate of difference of 5hmC-levels between G1 and G2 |    
+| 19        | p-value for test on equality of hydroxymethylation in G1 and G2 |
+| 20        | fdr corrected p-value for test on equality in G1 and G2|
+| 21        | estimated minimum difference of hydroxymethylation between G1 and G2 | 
 
 
+An example output line looks like this:
 
 ```
 chr1	434286	+	-0.069985	0.013117	0.096011	0.752027	0.977618	-0.087720	0.015558	0.117299	0.763707	0.951594	0	0	-0.130453	-0.002441	0.125570	0.9
