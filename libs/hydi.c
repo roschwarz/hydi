@@ -1418,10 +1418,10 @@ int main(int argc, char *argv[]) {
   manopt_blockseparator(&optset, "INPUT");
 
   manopt(&optset, REQSTRINGOPT, 0, 'a', "group1", 
-      "path/filename of query sequences", "<file>", NULL, &fn1);
+      "path/filename of count file for group 1", "<file>", NULL, &fn1);
  
   manopt(&optset, REQSTRINGOPT, 0, 'b', "group2", 
-      "path/filename of query sequences", "<file>", NULL, &fn2);
+      "path/filename of count file for group 2", "<file>", NULL, &fn2);
 
   /*
   manopt(&optset, REQINTOPT, 0, 'g', "factorial", 

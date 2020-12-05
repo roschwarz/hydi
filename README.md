@@ -39,7 +39,56 @@ After compilation, hit
 
 to ensure the program compiled correctly.
 
-## Input data
+## Parameter
+
+```
+usage: ./hydi.x [-a <file>] [-b <file>] [-o <file>] [-m] [-p] [-e]
+  Testing for the equality of hydroxymethylation from oxbs sequencing
+
+ [INPUT]
+ -a, --group1 <file>  path/filename of count file for group 1 (default:none)
+ -b, --group2 <file>  path/filename of count file for group 2 (default:none)
+ [OUTPUT]
+ -o, --output <file>  path/filename of output (default:none)
+ [CONTROL]
+ -m, --maxiter        maximum iterations in gradient descent (default:100)
+ -p, --alpha          significance level for flags and confidence intervals (default:0.050000)
+ -e, --epsilon        precision of numerical approximation (default:1.000000e-06)
+```
+
+### Input files
+
+| parameter  | description      |
+|----------- |-------------------------------------|
+| group1     | formated input file for the first group (G1). The format is described below. | 
+| group2     | formated input file for the second group (G2). The format is described below. | 
+
+Please note, the assignment of the sample files to the groups matter. The calculation of estimates and confidence intervals for hydroxymethylation uses G1 as a reference. Thus, negative values
+indicate a loss of hydroxymethylation in G1 as compared to G2. Conversely, positive values indicate a gain of hydroxymethylation G1. In a comparison of a group of cancer samples versus healthy controls, for instance, it is thus
+recommendable to assign the cancer data to G1 to make the data easier to interpret.
+
+### Output
+
+| parameter  | description      |
+|----------- |-------------------------------------|
+| output     | path or filename for the output. If option is omitted, the output will be dumped to stdout |
+
+### Control
+
+| parameter  | description      |
+|----------- |-------------------------------------|
+| maxiter    | control of the number of iterations for the gradient descent used in the estimation of maximum likelihoods  | 
+| alpha      | parameter controlling the level of confidence intervals and used for flags | 
+| epsilon    | parameter controlling the numerical precision of all calculations | 
+
+Please note, while increasing maxiter and decreasing epsilon may provide a better precision, the runtime of hydi may be affected substantially. Convienience flags of hydis output are set based on the value of `alpha`. Furthermore, hydi calculates `1-alpha` confidence intervals.
+
+### Complaint department
+
+steve bioinf uni leipzig de
+
+
+## Input data format
 
 hydi calls differentially hydroxymethylated cytosines (d5hmC) by comparing two groups of samples analysed with
 oxRRBS or oxWGBS sequencing experiments. For each group, hydi needs to be given a separate (gzipped) tab-separated file. Each file summarizes 
@@ -98,6 +147,10 @@ described in the following table
 | 21        | est_mindiff | estimated minimum difference of hydroxymethylation between G1 and G2 | 
 
 
+All confidence interval bounds and estimates are given as rates, i.e. on the interval of [0,1]. Confidence intervals are calculated to the `1-alpha`-level. 
+The convienience flag `overshoot` is set for one or both groups if the maximum likelihood estimate for 5hmC is negative and significantly different from 0 (based on the chosen `alpha`).
+Similarly, the `5hmC`-flag is set for one or both groups if the estimates are positive and significantly different from 0 (base on the chosen `alpha`). 
+
 An example output line looks like this:
 
 ```
@@ -105,7 +158,33 @@ chr1	434286	+	-0.069985	0.013117	0.096011	0.752027	0.977618	-0.087720	0.015558	0
 70594	1.000000	0.000000
 ```
 
+## Recommendations
 
+### Analysis of differential 5hmC
+
+For the analysis of differential hydroxymethylation it is recommended to filter out all CpGs with overshoots, i.e. a statitically significant
+**negative** methylation. This effect may be caused by coverage or alignment problems. To do this, the convenience flag `overshoot` (field 14) may be
+used. This can be done, for instance, by calling
+
+```{sh}
+awk '{if(NR == 1 || $14 == 0) print }' examples/output.txt > examples/output.noovershoot.txt
+```
+
+For all downstream analyses it is recommended to filter the data for a desired fdr cutoff, e.g. fdr <= 0.1, using `fdr_diff` (field 20) and to use the convienience field `est_mindiff` (field 21) to eliminate biologically irrelevant differences. Both values are calculated based on the difference p-value (field 19) and the confidence interval (field 16-18), respectively. For instance, the shell command
+
+```{sh}
+awk '{if(NR == 1 || ($14 == 0 && $20 <= 0.1 && $21 >= 0.1)) print }' examples/output.txt > examples/output.noovershoot.filtered.txt
+```
+extracts all sites without significant overshoots, significant fdr-corrected differenital hydroxymethylation and a minimum difference of at least 0.1.   
+
+### Analysis of 5hmC 
+
+If hydi is used for indentifying 5hmCs in either group, the convienience flag `5hmC` (field 15) may come in handy. For instance, to identify
+sites that are hydroxymethylated in both groups run
+
+```{sh}
+awk '{if(NR == 1 || $15 == 3) print }' examples/output.txt > examples/output.5hmC.txt
+```
 
 ## Example
 
