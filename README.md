@@ -53,11 +53,15 @@ chrom	pos	strand	SRR2074675_N	SRR2074675_C	SRR2074676_N	SRR2074676_C
 
 Each of the following lines represents a single CpG in the genome. The first three fields of each line specifiy the coordinates of the CpG.
 
-| chromosome | position | strand | 
+| chrom      | pos      | strand | 
+| -----------|:--------:| ------:|
+| Chromosome (alphanumeric) | Position of CpG (integer) | strand of CpG (character; [+-]) |   
 
 All following fields contain the count data. For each sample, there are four fields, i.e. two for each sequencing run:
 
-| coverage (BS) | converted cytosines (BS) | coverage (oxBS)  | converted cytosines (oxBS) |
+| coverage (BS) | non-converted Cs (BS) | coverage (oxBS)  | converted Cs (oxBS) |
+| --------------| ------------------------ | -----------------| -------------------------- |
+| number of all reads aligned in BS-Seq | number of non-converted Cs in BS-Seq | number of all reads aligned in oxBS-Seq | number of non-converted Cs in oxBS-Seq |   
 
 where BS and oxBS denote the two distinct treatments briefly described above. For a single sample
 
