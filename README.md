@@ -85,23 +85,23 @@ The following fields 19 fields are as follows
 | 6         | upper bound of confidence interval of the 5hmC-level in group 1 |
 | 7         | p-value for test of absence of hydroxymetylation/overshoots in group 1 |
 | 8         | fdr corrected p-value for test of absence in group 1 |
-|:----------|-------------|
+|           |                   |
 | 9         | lower bound of confidence interval of the 5hmC-level in group 2 |
 | 10        | maximum likelihood estimate of 5hmC-level in group 2 |
 | 11        | upper bound of confidence interval of the 5hmC-level in group 2 |
 | 12        | p-value for test of absence of hydroxymetylation/overshoots in group 2 |
 | 13        | fdr corrected p-value for test of absence in group 2 |
-|:----------|-------------|
+|           |              |
 | 14        | overshoot flag (0: no overshoot; 1:overshoot in group 1; 2:overshoot in group 2; 3: overshoot in both groups) |
 | 15        | 5hmC flag (0: no 5hmC; 1:5hmC in group 1; 2:5hmC in group 2; 3: 5hmC in both groups) |
-|:----------|-------------|
+|           |             |
 | 16        | lower bound of confidence interval of 5hmC differences between both groups|     
 | 17        | maximum likelihood estimate of 5hmC differences between both groups |     
 | 18        | upper bound likelihood estimate of difference of 5hmC-levels |    
 | 19        | p-value for test on equality of hydroxymethylation |
 | 20        | fdr corrected p-value for test on equality |
 | 21        | estimated minimum difference of hydroxymethylation | 
-|:----------|-------------|
+
 
 
 ```
