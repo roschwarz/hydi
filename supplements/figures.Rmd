@@ -8,7 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 Sys.setlocale('LC_ALL','C')
-setwd("/misc/paras/data/projects/maja/dhmC/")
+
 
 source("bd.R")
 library(tidyverse)
@@ -54,7 +54,7 @@ custom.col <- c( "#C4961A", "#D16103", "#4E84C4", "#FFDB6D", "#52854C", "#F4EDCA
 ### Likelihood landscape
 
 ```{r fig.width=6*1.5, fig.height=4.5*1.5}
-load("data/simulations/nullmodel_grid_ll_19.Rda")
+load("nullmodel_grid_ll_19.Rda")
 R <- Q %>% filter(p1==0.25,q1==0.5,devfrac==0.0) %>% select(p2,q2,lr) %>% mutate(x=p2,y=q2) 
 ```
 
@@ -195,7 +195,7 @@ For both tests, data is simulated with uniformly randomly drawn modification and
 ### Figure 2a, left inset: Uniformity of p-values from test on absence of 5hmC or overshoots
 
 ```{r, fig.width=2.5, fig.height=5}
-load("data/simulations/nullmodel_random_deltanull_18.Rda")
+load("nullmodel_random_deltanull_18.Rda")
 
 R <- Q  %>% mutate(coverage=factor(coverage), replicates=factor(replicates)) %>% filter(coverage %in% c(30,40,100), replicates==5) %>%  dplyr::group_by(coverage) %>%  slice_tail(n=10000) %>% select(replicates,coverage,p_C2,lr) 
 n <- nrow(R)
@@ -228,7 +228,7 @@ p1
 ### Figure 2a, right inset: density of z score versus standard normal
 
 ```{r, fig.width=2.5, fig.height=5/2.5}
-load("data/simulations/nullmodel_random_deltanull_18.Rda")
+load("nullmodel_random_deltanull_18.Rda")
 
 R <- Q  %>% mutate(coverage=factor(coverage), replicates=factor(replicates)) %>% filter(coverage %in% c(30,40,100), replicates==5) %>%  dplyr::group_by(coverage) %>% slice_tail(n=10000) 
 
@@ -254,7 +254,7 @@ p2
 ### Figure 2a, main with insets: QQ-plot of z score vs standard normal
 
 ```{r, fig.width=6, fig.height=5}
-load("data/simulations/nullmodel_random_deltanull_18.Rda")
+load("nullmodel_random_deltanull_18.Rda")
 
 R <- Q  %>% mutate(coverage=factor(coverage), replicates=factor(replicates)) %>% filter(coverage %in% c(30,40,100), replicates==5) %>%  dplyr::group_by(coverage) %>% slice_tail(n=10000) 
 
@@ -296,7 +296,7 @@ p3
 
 
 ```{r, fig.width=2.5, fig.height=5}
-load("data/simulations/nullmodel_random_commondelta_19.Rda")
+load("nullmodel_random_commondelta_19.Rda")
 
 R <- Q  %>% mutate(coverage=factor(coverage), replicates=factor(replicates)) %>% filter(coverage %in% c(30,40,100), replicates==5) %>%  dplyr::group_by(coverage) %>% slice_tail(n=10000) 
 
@@ -332,7 +332,7 @@ p4
 
 
 ```{r, fig.width=2.5, fig.height=5/2.5}
-load("data/simulations/nullmodel_random_commondelta_19.Rda")
+load("nullmodel_random_commondelta_19.Rda")
 
 R <- Q  %>% mutate(coverage=factor(coverage), replicates=factor(replicates)) %>% filter(coverage %in% c(30,40,100), replicates=="5") %>%  slice_tail(n=10000)  %>% drop_na()
 
@@ -358,7 +358,7 @@ p5
 ### Figure 2b, main with insets: QQ-plot of lambda vs chi-square with one degree of freedom
 
 ```{r, fig.width=6, fig.height=5}
-load("data/simulations/nullmodel_random_commondelta_19.Rda")
+load("nullmodel_random_commondelta_19.Rda")
 
 
 R <- Q  %>% mutate(coverage=factor(coverage), replicates=factor(replicates)) %>% filter(coverage %in% c(30,40,100), replicates=="5")  %>% slice_tail(n=10000) 
@@ -412,7 +412,7 @@ embed_fonts("figures/fig2.noembed.pdf", outfile="figures/fig2.pdf")
 ## Supplmental Figure 1: QQ-Plots for selected modification and methylation levels
 
 ```{r, fig.width=8, fig.height=12}
-load("data/simulations/nullmodel_grid_19.Rda")
+load("nullmodel_grid_19.Rda")
 
 R <- Q  %>% mutate(coverage=factor(coverage))
 
@@ -455,7 +455,7 @@ sfig1b
 ## Supplemental Figure 2: QQ-Plots for selected modification and methylation levels 
 
 ```{r, fig.width=8, fig.height=12}
-load("data/simulations/nullmodel_grid_19.Rda")
+load("nullmodel_grid_19.Rda")
 
 R <- Q  %>% mutate(coverage=factor(coverage))
 
@@ -500,7 +500,7 @@ sfig2a
 ## Supplemental Figure 3: Uniformity of p-values for selected modification and methylation levels
 
 ```{r, fig.width=12, fig.height=17}
-load("data/simulations/nullmodel_grid_19.Rda")
+load("nullmodel_grid_19.Rda")
 
 reps <- c("5","10","20")
 p1s <- c(0.10,0.50,0.90)
@@ -560,7 +560,7 @@ embed_fonts("figures/sfig3.noembed.pdf", outfile="figures/sfig3.pdf")
 ## Supplemental Figure 4: Uniformity of p-values for selected modification and methylation levels 
 
 ```{r, fig.width=12, fig.height=17}
-load("data/simulations/nullmodel_grid_19.Rda")
+load("nullmodel_grid_19.Rda")
 
 reps <- c("5","10","20")
 p1s <- c(0.10,0.50,0.90,0.10,0.50, 0.50,0.50,0.90,0.90,0.90,  0.10,0.10,0.50,0.50,0.90, 0.90,0.50,0.90,1.00,0.80)
@@ -626,7 +626,7 @@ embed_fonts("figures/sfig4.noembed.pdf", outfile="figures/sfig4.pdf")
 ### Supplemental Table 1: Coverage probabilities for hydroxymethylation
 
 ```{r, fig.width=5, fig.height=4}
-load("data/simulations/nullmodel_random_19.Rda")
+load("nullmodel_random_19.Rda")
 
 precision = 2
 
@@ -643,7 +643,7 @@ stab1
 ### Supplemental Table 2: Coverage probabilities for difference of hydroxymethylation
 
 ```{r}
-load("data/simulations/nullmodel_random_19.Rda")
+load("nullmodel_random_19.Rda")
 
 precision = 2
 
@@ -660,7 +660,7 @@ stab2
 ### Figure 3a: Sample confidence intervals
 
 ```{r, fig.width=6, fig.height=4}
-load("data/simulations/nullmodel_random_19.Rda")
+load("nullmodel_random_19.Rda")
 
 custom.col <- c( "#D16103", "#4E84C4")
 
@@ -692,7 +692,7 @@ p11
 ### Figure 3b: Density of estimates of differences in hitting and missing confidence intervals
 
 ```{r, fig.width=2, fig.height=4}
-load("data/simulations/nullmodel_random_19.Rda")
+load("nullmodel_random_19.Rda")
 
 custom.col <- c( "#D16103", "#4E84C4")
 
@@ -721,7 +721,7 @@ tmp
 ### Figure 3c: CI coverage probability by replicates and read coverages
 
 ```{r, fig.width=5, fig.height=4}
-load("data/simulations/nullmodel_random_19.Rda")
+load("nullmodel_random_19.Rda")
 custom.col <- c( "#C4961A", "#D16103", "#4E84C4", "#FFDB6D", "#52854C", "#F4EDCA", 
                  "#C3D7A4", "#52854C", "#4E84C4", "#293352")
 precision = 2
@@ -763,8 +763,8 @@ fig3.top
 #### Prepare data 
 
 ```{r}
-load("data/simulations/nullmodel_grid_19.Rda")
-load("data/simulations/simulation_foreground_4.Rda")
+load("nullmodel_grid_19.Rda")
+load("simulation_foreground_4.Rda")
 
 M <- R %>% group_by(coverage,replicates,combination) %>% mutate(padj=p.adjust(p,method="fdr"))  
 M <- M %>% arrange(padj) %>% mutate(total=1:n(), truepositive =cumsum(diff), falsepositive=total-truepositive, fdr=falsepositive/total, precision=truepositive/total, fpr=falsepositive/5000, recall=truepositive/500) %>% ungroup()
@@ -873,8 +873,8 @@ embed_fonts("figures/sfig5.noembed.pdf", outfile="figures/sfig5.pdf")
 #### Prepare data
 
 ```{r}
-load("data/simulations/nullmodel_grid_19.Rda")
-load("data/simulations/simulation_foreground_4.Rda")
+load("nullmodel_grid_19.Rda")
+load("simulation_foreground_4.Rda")
 
 M <- R %>% group_by(coverage,replicates,combination) %>% mutate(padj=p.adjust(p,method="fdr"))  
 M <- M %>% arrange(padj) %>% mutate(total=1:n(), truepositive =cumsum(diff), falsepositive=total-truepositive, fdr=falsepositive/total, precision=truepositive/total, fpr=falsepositive/5000, recall=truepositive/500) %>% ungroup()
@@ -954,8 +954,8 @@ stab4
 #### Prepare data
 
 ```{r}
-load("data/simulations/nullmodel_grid_19.Rda")
-load("data/simulations/simulation_foreground_4.Rda")
+load("nullmodel_grid_19.Rda")
+load("simulation_foreground_4.Rda")
 
 M <- R %>% group_by(coverage,replicates,combination) %>% mutate(padj=p.adjust(p,method="fdr"))  
 M <- M %>% arrange(padj) %>% mutate(total=1:n(), truepositive =cumsum(diff), falsepositive=total-truepositive, fdr=falsepositive/total, precision=truepositive/total, fpr=falsepositive/5000, recall=truepositive/500) %>% ungroup()
@@ -1026,7 +1026,7 @@ embed_fonts("figures/sfig7.noembed.pdf", outfile="figures/sfig7.pdf")
 custom.col <- c( "#C4961A", "#D16103", "#4E84C4", "#FFDB6D", "#52854C", "#F4EDCA", 
                  "#C3D7A4", "#52854C", "#4E84C4", "#293352")
 
-rss <- read_delim("data/simulations/pidstat.maxrsssummary.csv", delim="\t")
+rss <- read_delim("pidstat.maxrsssummary.csv", delim="\t")
 rss <- rss %>%mutate(replicates=as.factor(paste0(replicates," replicates")), coverage=as.factor(paste0("mean cov. ",coverage)), RSS=(RSS*1000)/1000000, N=N/1000 ) 
 
 rss <- rss %>% mutate(replicates = factor(replicates,levels=c("5 replicates", "10 replicates","20 replicates")))
@@ -1042,7 +1042,7 @@ p18
 #### Plot speed 
 
 ```{r}
-spd <- read_delim("data/simulations/hyperfine.summary.csv", delim="\t")
+spd <- read_delim("hyperfine.summary.csv", delim="\t")
 spd <- spd %>%mutate(replicates=as.factor(paste0(replicates," replicates")), coverage=as.factor(paste0("mean cov. ",coverage)), N=N/1000 ) 
 
 spd <- spd %>% mutate(replicates = factor(replicates,levels=c("5 replicates", "10 replicates","20 replicates")))
