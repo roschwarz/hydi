@@ -1,0 +1,1081 @@
+---
+title: "hydi_figures.Rmd"
+author: "Steve Hoffmann"
+date: "7/26/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+Sys.setlocale('LC_ALL','C')
+setwd("/misc/paras/data/projects/maja/dhmC/")
+
+source("bd.R")
+library(tidyverse)
+library(stringr)
+library(plotly)
+library(sqldf)
+library(data.table)
+library(multidplyr)
+library(qqplotr)
+library(plotROC)
+library(grid)
+library(gridExtra)
+library(gtable)
+library(ggpubr)
+library(png)
+library(extrafont)
+library(reshape2)
+library(ggh4x)
+library(xtable)
+
+font_import()
+font_install('fontcm')
+
+loadfonts(device = "postscript", quiet = FALSE)
+loadfonts(device = "pdf", quiet = FALSE)
+loadfonts()
+
+theme_set(
+  theme_minimal() +
+    theme(legend.position = "top", panel.background = element_rect(colour = "gray", size=1) 
+          #text = element_text(family = "Source Sans Pro", color = "grey20")) 
+          #text = element_text(family = "CM Sans", color = "grey20"))
+    )
+  )
+
+custom.col <- c( "#C4961A", "#D16103", "#4E84C4", "#FFDB6D", "#52854C", "#F4EDCA", 
+                 "#C3D7A4", "#52854C", "#4E84C4", "#293352")
+```
+
+
+## Figure 1: Overview 
+
+### Likelihood landscape
+
+```{r fig.width=6*1.5, fig.height=4.5*1.5}
+load("data/simulations/nullmodel_grid_ll_19.Rda")
+R <- Q %>% filter(p1==0.25,q1==0.5,devfrac==0.0) %>% select(p2,q2,lr) %>% mutate(x=p2,y=q2) 
+```
+
+```{r fig.width=6*1.5, fig.height=4.5*1.5}
+fun.1 <- function(x,off) x-off
+library(RColorBrewer)
+
+D0 <- R %>% mutate(llr=pmax(-100,-0.5*lr))
+mtx <- acast(D0, x~y, value.var="llr")
+x <- as.numeric(dimnames(mtx)[[1]])
+y <- as.numeric(dimnames(mtx)[[2]])
+dimnames(mtx) <- NULL
+
+D1 <- bind_cols(x=x,y=fun.1(x,0.25),z=0) %>% filter(y <= 1.0, y >= 0)
+
+mtx2 <- acast(D1, x~y, value.var="z")
+dimnames(mtx2) <- NULL
+
+fig <- plot_ly(x=x, y=y,z = mtx)  %>% add_surface( showscale=FALSE, opacity = 0.8,
+  contours = list(
+    z = list(
+      show=TRUE,
+      usecolormap=TRUE,
+      highlightcolor="#ff0000",
+      project=list(z=TRUE)
+      )
+    )
+  )
+
+fig <- fig %>% add_trace(x=D1$x, y=D1$y, z=1, type = "scatter3d",
+            mode = "lines",
+            line = list(color = "#D16103", width = 10))
+
+fig <- fig %>% add_trace(x=D1$x, y=D1$y, z=-99, type = "scatter3d",
+            mode = "lines",
+            line = list(color = "gray", width = 20, dash = 'dot'))
+
+zoom <- 1
+fig <- fig %>% layout(
+  showlegend=FALSE,
+    scene = list(
+      camera=list(
+        eye = list(x=1.25/zoom, y=-1.25/zoom, z=1.5/zoom)
+        ),
+       zaxis = list(tickfont=list(size=14),title=""),
+      yaxis = list(autotick = F, tickmode = "array", tickvals = c(0.25,0.5,0.75), tickfont=list(size=14),title=""),
+      xaxis = list(title="",tickfont=list(size=14))
+      )
+  )
+
+fig
+json<-plotly_json(fig,jsonedit = FALSE)
+write(json,'figures/ll_landscape_top.json')
+
+fig <- fig %>% layout(
+  showlegend=FALSE,
+    scene = list(
+      camera=list(
+        eye = list(x=4.5/3.1, y=5/3.1, z=2/3.1)
+        ),
+      zaxis = list(tickfont=list(size=14),title=""),
+      yaxis = list(autotick = F, tickmode = "array", tickvals = c(0.25,0.5,0.75), tickfont=list(size=14),title=""),
+      xaxis = list(title="",tickfont=list(size=14))
+      )
+  )
+
+fig
+
+#orca graph test.json --width 800 --height 600 -f svg -o ll_landscape.svg
+```
+
+```{r}
+N=20000
+size=100
+p1=0.9
+q1=0.15
+X = bind_cols(C=rbinom(N, size=size, prob=p1), Counts="5modC")
+Y = bind_cols(C=rbinom(N, size=size, prob=q1), Counts="5mC")
+D = bind_cols(C=X$C-Y$C, Counts="5hmC")
+R <- bind_rows(X,Y,D)
+A <- data.frame(x=0:size,y=dbinom(0:size,size,p1)*N,Counts="5modC")
+B <- data.frame(x=0:size,y=dbinom(0:size,size,q1)*N,Counts="5mC")
+C <- data.frame(x=-size:size, y=BDN_vec(-size:size,size,size,p1,q1)*N,Counts="5hmC")
+```
+
+```{r fig.width=4, fig.height=3}
+curve <- data.frame(x1 = 57, x2 = 70, y1 = 1700, y2 = 1300, Counts="5hmC")
+
+p0 <- R %>% ggplot(.,aes(x = C,fill=Counts,color=Counts)) +
+  labs(x="number of modified cytosines",y="total counts") + # (bars) /  scaled prob. (dashed lines)") +
+  geom_vline(xintercept=p1*size,color="black",linetype="dotted") + 
+  geom_vline(xintercept=(p1-q1)*size,color="black",linetype="dotted") +
+  geom_vline(xintercept=q1*size,color="black",linetype="dotted") +
+  geom_histogram(binwidth=1,position="identity",boundary=0.5,color="white",alpha=0.3) +
+  geom_line(data=A,aes(x=x,y=y,color=Counts),size=1.1,linetype=2,alpha=0.9) +
+  geom_line(data=B,aes(x=x,y=y,color=Counts),size=1.1,linetype=2,alpha=0.9) +
+  geom_line(data=C[101:200,],aes(x=x,y=y,color=Counts),size=1.1,linetype="dashed",alpha=0.8) +
+  annotate("text",label="Binomial difference", x=58, y=1800, family = "CM Sans", size=4) +
+  geom_curve(aes(x = x1, y = y1, xend = x2, yend = y2), size=1.2, lineend="round",  
+             data = curve, arrow = arrow(length = unit(0.03, "npc"))) +
+  theme_bw() + theme(legend.position = c(0.5, 0.25), 
+        strip.background = element_rect(colour="white", fill="#FFFFFF"), 
+        text = element_text(family="CM Sans", size=12),
+        plot.title = element_text(hjust = 0.2, vjust=-1, size=10),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+
+  scale_fill_manual(values=custom.col) + scale_color_manual(values=custom.col)
+  ggsave(filename = "figures/bdn_example.pdf", plot = p0, device = "pdf")
+  ggsave(filename = "figures/bdn_example.pdf", plot = p0, device = "svg")
+  ggsave(filename = "figures/bdn_example.png", plot = p0, device = "png", family="CM Sans")
+
+  par(family = "CM Sans")
+  p0
+```
+
+```{r fig.width=11, fig.height=4.5}
+
+#grob1 <- rasterGrob(readPNG("schematic.png"))
+grob2 <- rasterGrob(readPNG("figures/ll_landscape_top.png"))
+
+#fig1 <- ggarrange(grob1, NULL, p0, grob2, nrow = 1, widths=c(4,0.2,3,3),labels=c("a.","", "b.","c."),label.x=c(0.02,0.0,-0.05,0.0), font.label = list(family="CM Sans"))
+
+fig1 <- ggarrange( p0, grob2, nrow = 1, widths=c(4,3),labels=c("a.", "b."),label.x=c(0.02,0.02), font.label = list(family="CM Sans"))
+
+fig1
+
+ggsave(filename = "figures/fig1.png", plot = fig1, device = "png")
+ggsave(filename = "figures/fig1.noembed.pdf", plot = fig1, device = "pdf")
+ggsave(filename = "figures/fig1.svg", plot = fig1, device = "svg")
+
+embed_fonts("figures/fig1.noembed.pdf", outfile="figures/fig1.pdf")
+```
+
+## Figure 2: Simulation under the Null hypothesis; similarity of LR and Chi-square distribution 
+
+For both tests, data is simulated with uniformly randomly drawn modification and methylation levels. For the test on absence of hydroxymethylation, the delta is set to zero. For the test on differential hydroxymethylation delta is random within the bounds of the modification levels. 
+
+### Figure 2a, left inset: Uniformity of p-values from test on absence of 5hmC or overshoots
+
+```{r, fig.width=2.5, fig.height=5}
+load("data/simulations/nullmodel_random_deltanull_18.Rda")
+
+R <- Q  %>% mutate(coverage=factor(coverage), replicates=factor(replicates)) %>% filter(coverage %in% c(30,40,100), replicates==5) %>%  dplyr::group_by(coverage) %>%  slice_tail(n=10000) %>% select(replicates,coverage,p_C2,lr) 
+n <- nrow(R)
+cov.labs <- c("cov. 30", "cov. 40", "cov. 100")
+names(cov.labs) <- c("30", "40", "100")
+
+p <- R  %>% group_by(replicates) %>%
+  do(distplots= ggplot(.,aes(x = p_C2, color=coverage, fill=coverage)) + 
+       geom_histogram(binwidth = 0.1, boundary=0, alpha=0.6) +
+       geom_hline(yintercept=n*0.1*0.33, linetype="dashed",color="black") +
+       labs(x = "p-value") + 
+       coord_cartesian(ylim = c(0, n/3*0.2))  +
+       scale_color_manual(values=custom.col) + 
+       scale_fill_manual(values=custom.col) + facet_grid(coverage ~ ., labeller = labeller(coverage = cov.labs)) + 
+       scale_y_continuous(breaks=c(0, 500, 1000, 1500, 2000),labels=c("0","500","1K","1.5K","2K"))+
+       theme(plot.caption = element_text(hjust = 0, face= "italic"), 
+        plot.title.position = "plot",
+        strip.background = element_rect(colour="white", fill="#FFFFFF"), 
+        text = element_text(family = "CM Sans", size=11),
+        plot.title = element_text(hjust = 0.47, size=11),
+        legend.position = "none", panel.grid.major = element_blank(), panel.grid.minor = element_blank()
+       )
+     )
+
+p1 <- p$distplots[[1]]
+p1
+```
+
+
+### Figure 2a, right inset: density of z score versus standard normal
+
+```{r, fig.width=2.5, fig.height=5/2.5}
+load("data/simulations/nullmodel_random_deltanull_18.Rda")
+
+R <- Q  %>% mutate(coverage=factor(coverage), replicates=factor(replicates)) %>% filter(coverage %in% c(30,40,100), replicates==5) %>%  dplyr::group_by(coverage) %>% slice_tail(n=10000) 
+
+custom.col <- c( "#C4961A", "#D16103", "#4E84C4", "#FFDB6D", "#F4EDCA", 
+                 "#C3D7A4", "#52854C", "#4E84C4", "#293352")
+
+p2 <- ggplot(R, aes(x = z_C1, color=coverage)) + geom_density(aes(fill=coverage), size=0.3, alpha=0.2) + 
+  coord_cartesian(xlim =c(-3, 3), ylim=c(0.0,0.5)) + 
+  geom_function( fun = dnorm, args = list(sd = 1), color="#000000",linetype="dashed", size=0.5) +
+  labs(x = "z score") +
+  scale_colour_manual(values=custom.col) + 
+  scale_fill_manual(values=custom.col) +
+  theme(plot.caption = element_text(hjust = 0, face= "italic"), 
+        plot.title.position = "plot",
+        strip.background = element_rect(colour="white", fill="#FFFFFF"), 
+        text = element_text(family = "CM Sans", size=11),
+        plot.title = element_text(hjust = 0.2, vjust=-1, size=11),
+        legend.position = "none", panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+p2
+```
+
+
+### Figure 2a, main with insets: QQ-plot of z score vs standard normal
+
+```{r, fig.width=6, fig.height=5}
+load("data/simulations/nullmodel_random_deltanull_18.Rda")
+
+R <- Q  %>% mutate(coverage=factor(coverage), replicates=factor(replicates)) %>% filter(coverage %in% c(30,40,100), replicates==5) %>%  dplyr::group_by(coverage) %>% slice_tail(n=10000) 
+
+custom.col <- c( "#C4961A", "#D16103", "#4E84C4", "#FFDB6D", "#F4EDCA", 
+                 "#C3D7A4", "#52854C", "#4E84C4", "#293352")
+
+q <- R %>% dplyr::group_by(replicates)  %>%  
+  do(qqplots=ggplot(.,aes(sample = z_C1, colour=coverage)) + 
+       geom_qq_band(bandType="pointwise", distribution = "norm", dparams = list(sd=1), fill="#f2f2f2", alpha=0.1) + 
+       geom_qq(distribution = stats::qnorm, dparams = list(sd=1), alpha=0.5) +
+       geom_abline(color="#000000",linetype="dashed",size=1) + 
+       labs(y = "sample quantiles (z)", x="Theoretical quantiles (norm, sd=1)", colour="mean cov.") + 
+        coord_cartesian(xlim =c(-3, 3), ylim = c(-4, 4)) +
+       annotate("text", label=paste0("(",.$replicates[1]," replicates, n=10000)"), x=7,y=1,family = "CM Sans", color="black",size=4,alpha=0.6) +
+       scale_colour_manual(values=custom.col) + 
+       
+        annotation_custom(grob=ggplotGrob(p1), 
+                               ymin = -1, ymax=4, xmin=-3.1, xmax=-0.5) + 
+       
+              
+       annotation_custom(grob=ggplotGrob(p2),
+                               ymin = -4, ymax=-1.5, xmin=-1.0, xmax=1.3) + 
+       
+       theme(plot.caption = element_text(hjust = 0, face= "italic"), 
+        plot.title.position = "plot",
+        strip.background = element_rect(colour="white", fill="#FFFFFF"), 
+        text = element_text(family = "CM Sans", size=12),
+        plot.title = element_text(hjust = 0.2, vjust=-1, size=10),
+        legend.position = c(0.85, 0.2), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+     )
+
+p3 <- q$qqplots[[1]]
+p3
+
+```
+
+
+### Figure 2b, left inset: Uniformity of p-values from test on equality of hydroxymethylation
+
+
+```{r, fig.width=2.5, fig.height=5}
+load("data/simulations/nullmodel_random_commondelta_19.Rda")
+
+R <- Q  %>% mutate(coverage=factor(coverage), replicates=factor(replicates)) %>% filter(coverage %in% c(30,40,100), replicates==5) %>%  dplyr::group_by(coverage) %>% slice_tail(n=10000) 
+
+cov.labs <- c("cov. 30", "cov. 40", "cov. 100")
+names(cov.labs) <- c("30", "40", "100")
+
+p <- R  %>% group_by(replicates) %>% 
+  do(distplots= ggplot(.,aes(x = p, color=coverage, fill=coverage)) + 
+       geom_histogram(binwidth = 0.1, boundary=0, alpha=0.6) +
+       geom_hline(yintercept=10000*0.1, linetype="dashed",color="black") +
+       labs(x = "p-value") + 
+       coord_cartesian(ylim = c(0, 2000))  +
+       scale_color_manual(values=custom.col) + 
+       scale_fill_manual(values=custom.col) + facet_grid(coverage ~ ., labeller = labeller(coverage = cov.labs)) + 
+       scale_y_continuous(breaks=c(0, 500, 1000, 1500, 2000),labels=c("0","500","1K","1.5K","2K"))+
+       theme(plot.caption = element_text(hjust = 0, face= "italic"), 
+        plot.title.position = "plot",
+        strip.background = element_rect(colour="white", fill="#FFFFFF"), 
+        text = element_text(family = "CM Sans", size=11),
+        plot.title = element_text(hjust = 0.47, size=12),
+        legend.position = "none", panel.grid.major = element_blank(), panel.grid.minor = element_blank()
+       )
+     )
+
+p4 <- p$distplots[[1]]
+p4
+
+```
+
+
+
+### Figure 2b, right inset: density of lambda versus density of chi-square with one degree of freedom
+
+
+```{r, fig.width=2.5, fig.height=5/2.5}
+load("data/simulations/nullmodel_random_commondelta_19.Rda")
+
+R <- Q  %>% mutate(coverage=factor(coverage), replicates=factor(replicates)) %>% filter(coverage %in% c(30,40,100), replicates=="5") %>%  slice_tail(n=10000)  %>% drop_na()
+
+custom.col <- c( "#C4961A", "#D16103", "#4E84C4", "#FFDB6D", "#F4EDCA", 
+                 "#C3D7A4", "#52854C", "#4E84C4", "#293352")
+
+p5 <- ggplot(R, aes(x = lr, color=coverage)) + geom_density(aes(fill=coverage), size=0.3, alpha=0.2) + 
+  coord_cartesian(xlim =c(0, 7.5), ylim=c(0.0,0.85)) + 
+  labs(x = "lambda") +
+  stat_function( fun = dchisq, args = list(df = 1), color="#000000",linetype="dashed", size=0.5) +
+  scale_colour_manual(values=custom.col) + 
+  scale_fill_manual(values=custom.col) +
+  theme(plot.caption = element_text(hjust = 0, face= "italic"), 
+        plot.title.position = "plot",
+        strip.background = element_rect(colour="white", fill="#FFFFFF"), 
+        text = element_text(family = "CM Sans", size=11),
+        plot.title = element_text(hjust = 0.2, vjust=-1, size=11),
+        legend.position = "none", panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+p5
+```
+
+
+### Figure 2b, main with insets: QQ-plot of lambda vs chi-square with one degree of freedom
+
+```{r, fig.width=6, fig.height=5}
+load("data/simulations/nullmodel_random_commondelta_19.Rda")
+
+
+R <- Q  %>% mutate(coverage=factor(coverage), replicates=factor(replicates)) %>% filter(coverage %in% c(30,40,100), replicates=="5")  %>% slice_tail(n=10000) 
+
+custom.col <- c( "#C4961A", "#D16103", "#4E84C4", "#FFDB6D", "#F4EDCA", 
+                 "#C3D7A4", "#52854C", "#4E84C4", "#293352")
+
+q <- R %>% dplyr::group_by(replicates)  %>%
+  do(qqplots=ggplot(.,aes(sample = lr, colour=coverage)) + 
+       geom_qq_band(bandType="pointwise", distribution = "chisq", dparams = list(df=1), fill="#f2f2f2", alpha=0.1) + 
+       geom_qq(distribution = stats::qchisq, dparams = list(df=1), alpha=0.5) +
+       geom_abline(color="#000000",linetype="dashed",size=1) + 
+       labs(y = "sample quantiles (lambda)", x="Theoretical quantiles (chisq, df=1)", colour="mean cov.") + 
+       coord_cartesian(xlim =c(0, 12), ylim = c(0, 17)) + 
+       annotate("text", label=paste0("(",.$replicates[1]," replicates, n=10000)"), x=6,y=1,family = "CM Sans", color="black",size=4,alpha=0.6) +
+       scale_colour_manual(values=custom.col) + 
+       
+       annotation_custom(grob=ggplotGrob(p4), 
+                               ymin = 5, ymax=17, xmin=-0.5, xmax=5) + 
+       
+       annotation_custom(grob=ggplotGrob(p5),
+                               ymin = 12, ymax=17, xmin=5, xmax=9.5) +  
+       
+       
+       theme(plot.caption = element_text(hjust = 0, face= "italic"), 
+        plot.title.position = "plot",
+        strip.background = element_rect(colour="white", fill="#FFFFFF"), 
+        text = element_text(family = "CM Sans", size=12),
+        plot.title = element_text(hjust = 0.2, vjust=-1, size=10),
+        legend.position = c(0.85, 0.2), panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+     )
+
+p6 <- q$qqplots[[1]]
+p6
+
+```
+
+
+### Export Figure 2
+
+```{r, fig.width=11, fig.height=18*0.25}
+
+fig2 <- ggarrange(p3, p6, nrow = 1, widths=c(6,6),labels=c("a.","b."),label.x=c(0.02,0.02),vjust=1)
+fig2
+ggsave(filename = "figures/fig2.png", plot = fig2, device = "png")
+ggsave(filename = "figures/fig2.svg", plot = fig2, device = "svg")
+ggsave(filename = "figures/fig2.noembed.pdf", plot= fig2, device="pdf")
+embed_fonts("figures/fig2.noembed.pdf", outfile="figures/fig2.pdf")
+```
+
+## Supplmental Figure 1: QQ-Plots for selected modification and methylation levels
+
+```{r, fig.width=8, fig.height=12}
+load("data/simulations/nullmodel_grid_19.Rda")
+
+R <- Q  %>% mutate(coverage=factor(coverage))
+
+p7 <- R %>% dplyr::group_by(replicates, combination)  %>% filter((p1==q1 & p1==p2 & q1==q2)) %>% drop_na() %>% 
+  do(qqplots=ggplot(.,aes(sample = z_C1, colour=coverage)) + 
+       geom_qq_band(bandType="pointwise", distribution = "norm", dparams = list(sd=1), fill="#f2f2f2", alpha=0.1) + 
+       stat_qq_line(distribution = "norm", dparams = list(sd=1), colour = "gray") +
+       geom_qq(distribution = stats::qnorm, dparams = list(sd=1), alpha=0.5) +
+       geom_abline(color="black",linetype="dashed",size=1) + 
+       labs(y = "Sample (z score)", x="Theoretical (norm, sd=1)", colour="mean coverage") + 
+       coord_cartesian(xlim =c(-3, 3), ylim = c(-4, 4)) + 
+      annotate("text", label=paste0("p1:",.$p1[1]," q1:",.$q1[1],"(reps:",.$replicates[1],")"), 
+                x=0,y=4,family = "CM Sans", color="black",size=4,alpha=0.6) +
+       scale_colour_manual(values=custom.col) +
+       theme(plot.caption = element_text(hjust = 0, face= "italic"), 
+             plot.title.position = "plot",
+             strip.background = element_rect(colour="white", fill="#FFFFFF"), 
+             text = element_text(family = "CM Sans", size=8),
+             plot.title = element_text(hjust = 0.2, vjust=-1, size=10),
+             legend.position = c(0.85, 0.2)))
+
+mylabels <- tolower(as.character(as.roman(1:length(p7$qqplots))))
+sfig1a <-ggarrange(plotlist=p7$qqplots[c(1:6)],ncol=2,nrow=3,labels=mylabels[c(1:6)],common.legend = TRUE)
+sfig1b <-ggarrange(plotlist=p7$qqplots[c(7:9)],ncol=2,nrow=3,labels=mylabels[c(7:12)],common.legend = TRUE)
+
+```
+
+### Export Supplemental Figure 1
+
+```{r}
+ggexport(sfig1a, sfig1b, filename = "figures/sfig1.noembed.pdf", width=8.3*0.9, height=11.7*0.9)
+embed_fonts("figures/sfig1.noembed.pdf", outfile="figures/sfig1.pdf")
+```
+
+```{r}
+sfig1a
+sfig1b
+```
+
+## Supplemental Figure 2: QQ-Plots for selected modification and methylation levels 
+
+```{r, fig.width=8, fig.height=12}
+load("data/simulations/nullmodel_grid_19.Rda")
+
+R <- Q  %>% mutate(coverage=factor(coverage))
+
+p8 <- R %>% dplyr::group_by(replicates, combination)  %>% drop_na() %>% 
+  do(qqplots=ggplot(.,aes(sample = lr, colour=coverage)) + 
+       geom_qq_band(bandType="pointwise", distribution = "chisq", dparams = list(df=1), fill="#f2f2f2", alpha=0.1) + 
+       stat_qq_line(distribution = "chisq", dparams = list(df=1), colour = "gray") +
+       geom_qq(distribution = stats::qchisq, dparams = list(df=1), alpha=0.5) +
+       geom_abline(color="black",linetype="dashed",size=1) + 
+       labs(y = "Sample (lambda)", x="Theoretical (chisq, df=1)", colour= "mean coverage") + 
+       coord_cartesian(xlim =c(0, 12), ylim = c(0, 17)) + 
+      annotate("text", label=paste0("p1:",.$p1[1]," q1:",.$q1[1],"; p2:",.$p2[1]," q2:",.$q2[1]," (reps:",.$replicates[1],")"), 
+                x=6,y=17,family = "CM Sans", color="black",size=4,alpha=0.6) +
+       scale_colour_manual(values=custom.col) +
+       theme(plot.caption = element_text(hjust = 0, face= "italic"), 
+             plot.title.position = "plot",
+             strip.background = element_rect(colour="white", fill="#FFFFFF"), 
+             text = element_text(family = "CM Sans", size=8),
+             plot.title = element_text(hjust = 0.2, vjust=-1, size=10),
+             legend.position = c(0.85, 0.2)))
+
+mylabels <- tolower(as.character(as.roman(1:length(p8$qqplots))))
+sfig2a <-ggarrange(plotlist=p8$qqplots[c(1:6)],ncol=2,nrow=3,labels=mylabels[c(1:6)],common.legend = TRUE)
+sfig2b <-ggarrange(plotlist=p8$qqplots[c(7:12)],ncol=2,nrow=3,labels=mylabels[c(7:12)],common.legend = TRUE)
+sfig2c <-ggarrange(plotlist=p8$qqplots[c(13:18)],ncol=2,nrow=3,labels=mylabels[c(13:18)],common.legend = TRUE)
+sfig2d <-ggarrange(plotlist=p8$qqplots[c(19:24)],ncol=2,nrow=3,labels=mylabels[c(19:24)],common.legend = TRUE)
+sfig2e <-ggarrange(plotlist=p8$qqplots[c(25:30)],ncol=2,nrow=3,labels=mylabels[c(25:30)],common.legend = TRUE)
+sfig2f <-ggarrange(plotlist=p8$qqplots[c(31:36)],ncol=2,nrow=3,labels=mylabels[c(31:36)],common.legend = TRUE)
+```
+
+### Export Supplemental Figure 2
+
+```{r}
+ggexport(sfig2a, sfig2b, sfig2c,sfig2d, sfig2e, sfig2f, filename = "figures/sfig2.noembed.pdf", width=8.3*0.9, height=11.7*0.9)
+embed_fonts("figures/sfig2.noembed.pdf", outfile="figures/sfig2.pdf")
+```
+
+```{r}
+sfig2a
+```
+
+## Supplemental Figure 3: Uniformity of p-values for selected modification and methylation levels
+
+```{r, fig.width=12, fig.height=17}
+load("data/simulations/nullmodel_grid_19.Rda")
+
+reps <- c("5","10","20")
+p1s <- c(0.10,0.50,0.90)
+q1s <- c(0.10,0.50,0.90)
+  
+p2s <- c(0.10,0.50,0.90)
+q2s <- c(0.10,0.50,0.90)
+
+#alternative names for 20 combinations
+comb.labs <- paste0("p1:",p1s," q1:",q1s)
+names(comb.labs) <- paste(1:length(p1s))
+#alternative names for coverages
+cov.labs <- c("mean coverage 30", "mean coverage 40", "mean coverage 100", "mean coverage 200")
+names(cov.labs) <- c("30", "40", "100","200")
+p9 <- list()
+count <- 0
+
+#iterate over replicates
+for(i in reps) {
+  #divide comtinations in four groups of 5
+  for(g in c(1)) {
+    
+    count <- count + 1
+    comb.loc.labs <- paste0(comb.labs,paste0(" rep:",i))
+    names(comb.loc.labs) <- paste(1:length(p1s))
+    
+    if(g==1) {
+      group = c("1","2","3")
+    } 
+    
+    R <- Q %>% mutate(hasll=ifelse(is.na(lr),F,T)) %>% 
+      filter(replicates==i,coverage %in% c("30","40","100","200"),combination %in% group) 
+    p9[[count]] <- R %>% ggplot(.,aes(x = p_C1)) + #patternbar(.,aes(x = pval)) +
+           geom_histogram(binwidth = 0.1, boundary=0, color = "black") +
+           geom_hline(yintercept=5000*0.1, linetype="dashed",color="#D16103") +
+           labs(x = "p-value") + 
+           coord_cartesian(ylim = c(0, 1500)) +
+           scale_fill_manual(values=c("#888888","#777777")) +
+           theme(text = element_text(family = "CM Sans", size=10), legend.position = "none") +
+           facet_grid(combination ~ coverage, 
+                      labeller = labeller(combination = comb.loc.labs, coverage=cov.labs)) 
+
+  }
+}
+p9
+```
+
+### Export Supplemental Figure 3
+
+```{r}
+ggexport(p9, filename = "figures/sfig3.noembed.pdf", width=8.3*0.9, height=11.7*0.9)
+embed_fonts("figures/sfig3.noembed.pdf", outfile="figures/sfig3.pdf")
+```
+
+
+
+## Supplemental Figure 4: Uniformity of p-values for selected modification and methylation levels 
+
+```{r, fig.width=12, fig.height=17}
+load("data/simulations/nullmodel_grid_19.Rda")
+
+reps <- c("5","10","20")
+p1s <- c(0.10,0.50,0.90,0.10,0.50, 0.50,0.50,0.90,0.90,0.90,  0.10,0.10,0.50,0.50,0.90, 0.90,0.50,0.90,1.00,0.80)
+q1s <- c(0.10,0.50,0.90,0.00,0.45, 0.10,0.00,0.50,0.10,0.00,  0.10,0.10,0.50,0.50,0.50, 0.50,0.40,0.80,0.75,0.40)
+  
+p2s <- c(0.10,0.50,0.90,0.10,0.50, 0.50,0.50,0.90,0.90,0.90,  0.50,0.90,0.90,0.00,0.50, 0.40,0.20,0.40,0.25,0.60)
+q2s <- c(0.10,0.50,0.90,0.00,0.45, 0.10,0.00,0.50,0.10,0.00,  0.50,0.90,0.90,0.00,0.10, 0.00,0.10,0.30,0.00,0.20)
+
+#alternative names for 20 combinations
+comb.labs <- paste0("p1:",p1s," q1:",q1s, " p1:", p2s, " q2:", q2s)
+names(comb.labs) <- paste(1:length(p1s))
+#alternative names for coverages
+cov.labs <- c("mean coverage 30", "mean coverage 40", "mean coverage 100", "mean coverage 200")
+names(cov.labs) <- c("30", "40", "100","200")
+p10 <- list()
+count <- 0
+
+#iterate over replicates
+for(i in reps) {
+  #divide comtinations in four groups of 5
+  for(g in c(1,2,3,4)) {
+    
+    count <- count + 1
+    comb.loc.labs <- paste0(comb.labs,paste0(" rep:",i))
+    names(comb.loc.labs) <- paste(1:length(p1s))
+    
+    if(g==1) {
+      group = c("1","2","3","4","5")
+    } else if(g==2) {
+      group = c("6", "7","8","9","10")
+    } else if(g==3) {
+      group = c("11","12","13","14","15")
+    } else {
+      group = c("16","17","18","19","20")
+    }
+    
+    R <- Q %>% mutate(hasll=ifelse(is.na(lr),F,T)) %>% filter(replicates==i,coverage %in% c("30","40","100","200"),combination %in% group) 
+    p10[[count]] <- R %>% ggplot(.,aes(x = p)) + #patternbar(.,aes(x = pval)) +
+           geom_histogram(binwidth = 0.1, boundary=0, color = "black") +
+           geom_hline(yintercept=5000*0.1, linetype="dashed",color="#D16103") +
+           labs(x = "p-value") + 
+           coord_cartesian(ylim = c(0, 1500)) +
+           scale_fill_manual(values=c("#888888","#777777")) +
+           theme(text = element_text(family = "CM Sans", size=10), legend.position = "none") +
+           facet_grid(combination ~ coverage, labeller = labeller(combination = comb.loc.labs, coverage=cov.labs)) 
+
+  }
+}
+p10
+```
+
+### Export Supplemental Figure 4
+
+```{r}
+ggexport(p10, filename = "figures/sfig4.noembed.pdf", width=8.3*0.9, height=11.7*0.9)
+embed_fonts("figures/sfig4.noembed.pdf", outfile="figures/sfig4.pdf")
+```
+
+
+
+## Confidence intervals and coverage probabilities
+
+### Supplemental Table 1: Coverage probabilities for hydroxymethylation
+
+```{r, fig.width=5, fig.height=4}
+load("data/simulations/nullmodel_random_19.Rda")
+
+precision = 2
+
+R <- Q %>% select(delta1,d12_pll,d1_cil,d1_cir,replicates,coverage) 
+R <- R %>% mutate(center=signif(d12_pll-delta1,digits=precision), lo=signif(d1_cil-delta1,digits=precision), hi=signif(d1_cir-delta1,digits=precision))
+R <- R %>% mutate(cover=ifelse((hi < 0 | lo > 0), F, T))
+  
+R <- R %>% dplyr::group_by(coverage,replicates) %>% dplyr::summarize(n=n(),hits=sum(cover==TRUE), misses=sum(cover==FALSE)) %>% mutate(cp=1-(misses/n)) %>% ungroup()
+stab1 <- R %>% mutate(coverage=as.factor(coverage)) %>% mutate(replicates=as.factor(replicates))
+print(xtable(stab1, type = "latex"), file = "tables/stab1_ci_delta_table.tex")
+
+stab1
+```
+### Supplemental Table 2: Coverage probabilities for difference of hydroxymethylation
+
+```{r}
+load("data/simulations/nullmodel_random_19.Rda")
+
+precision = 2
+
+R <- Q %>% select(coverage,replicates,delta1,delta2,d0_pll,d0_lo,d0_hi) %>% mutate(dd = signif(delta1-delta2, digits=precision)) 
+R <- R %>% mutate(d0_lo=signif(d0_lo,digits=precision), d0_hi = signif(d0_hi, digits=precision))
+R <- R %>% mutate(cover=ifelse( dd < d0_lo | dd > d0_hi, F, T))
+
+R <- R %>% dplyr::group_by(coverage,replicates) %>% dplyr::summarize(n=n(),hits=sum(cover==TRUE), misses=sum(cover==FALSE)) %>% mutate(cp=1-(misses/n)) %>% ungroup()
+stab2 <- R %>% mutate(coverage=as.factor(coverage)) %>% mutate(replicates=as.factor(replicates))
+print(xtable(stab2, type = "latex"), file = "tables/stab2_ci_deltadelta_table.tex")
+stab2
+```
+
+### Figure 3a: Sample confidence intervals
+
+```{r, fig.width=6, fig.height=4}
+load("data/simulations/nullmodel_random_19.Rda")
+
+custom.col <- c( "#D16103", "#4E84C4")
+
+R <- Q %>% select(delta1,delta2,d0_pll,d0_lo,d0_hi) %>% slice_head(n=100) %>% mutate(dd = delta1-delta2) 
+R <- R %>% mutate(center=signif(d0_pll-dd,digits=4), lo=signif(d0_lo-dd,digits=4), hi=signif(d0_hi-dd,digits=4))
+R <- R %>% mutate(cover=ifelse((hi < 0 | lo > 0), F, T))
+  
+  
+p11 <- ggplot(R, aes(x=1:100, y = center,color=cover)) +
+  geom_point(size = 1) +
+  geom_errorbar(aes(ymax = hi, ymin = lo)) +  scale_color_manual(values=custom.col) +
+  coord_cartesian(ylim = c(-0.3, 0.3)) + 
+  labs(x = "sample") +
+  #labs(y=expression("simulated"~Delta*Delta~" (zero centered)"),colour= "overlap") +
+  labs(y="simulated diff. (zero centered)",colour= "overlap") +
+  geom_hline(yintercept=0,linetype="dashed",color="black",size=0.8) + 
+  annotate("text", label=paste0("mean read cov. 30 (5 rep.)"), 
+                x=25,y=0.24,family = "CM Sans", color="black",size=4,alpha=0.6) +
+  theme(plot.caption = element_text(hjust = 0, face= "italic"), 
+        plot.title.position = "plot",
+        strip.background = element_rect(colour="white", fill="#FFFFFF"), 
+        text = element_text(family = "CM Sans", size=12),
+        plot.title = element_text(hjust = 0.2, vjust=-1, size=10),
+        legend.position="none", panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        plot.margin=unit(c(15, 5.5, 5.5, 5.5), "points"))
+  
+p11
+```
+### Figure 3b: Density of estimates of differences in hitting and missing confidence intervals
+
+```{r, fig.width=2, fig.height=4}
+load("data/simulations/nullmodel_random_19.Rda")
+
+custom.col <- c( "#D16103", "#4E84C4")
+
+R <- Q %>% select(coverage,delta1,delta2,d0_pll,d0_lo,d0_hi) %>% mutate(dd = delta1-delta2) 
+R <- R %>% mutate(center=signif(d0_pll-dd,digits=4), lo=signif(d0_lo-dd,digits=4), hi=signif(d0_hi-dd,digits=4))
+R <- R %>% mutate(cover=ifelse((hi < 0 | lo > 0), F, T))
+R <- R %>% filter(coverage %in% c(30,40,100,200))
+
+p12 <- ggplot(R, aes(x=center,group=cover,fill=cover,colour=cover))+
+  geom_density(alpha=0.5,color=NA) +  scale_fill_manual(values=custom.col) +
+  labs(fill="CI overlap") +
+  geom_vline(xintercept=0,linetype="dashed",color="black",size=0.8) + 
+  annotate("text", label=paste0("n=600K"), 
+                x=-0.25,y=8,family = "CM Sans", color="black",size=4,alpha=0.6) +
+  theme(legend.position = c(0.7, 0.85), legend.direction="vertical", panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(), axis.ticks.y=element_blank(), plot.margin=unit(c(15, 5.5, 5.5, 5.5), "points"))   + coord_flip(xlim=c(-0.3,0.3),ylim=c(0,16)) 
+
+p12
+
+
+```
+```{r, fig.width=9, fig.height=4}
+tmp <- ggarrange(p11, p12, nrow = 1, widths=c(6,2),vjust=1)
+tmp
+```
+
+### Figure 3c: CI coverage probability by replicates and read coverages
+
+```{r, fig.width=5, fig.height=4}
+load("data/simulations/nullmodel_random_19.Rda")
+custom.col <- c( "#C4961A", "#D16103", "#4E84C4", "#FFDB6D", "#52854C", "#F4EDCA", 
+                 "#C3D7A4", "#52854C", "#4E84C4", "#293352")
+precision = 2
+
+R <- Q %>% select(coverage,replicates,delta1,delta2,d0_pll,d0_lo,d0_hi) %>% mutate(dd = signif(delta1-delta2, digits=precision)) 
+R <- R %>% mutate(d0_lo=signif(d0_lo,digits=precision), d0_hi = signif(d0_hi, digits=precision))
+R <- R %>% mutate(cover=ifelse( dd < d0_lo | dd > d0_hi, F, T))
+R <- R %>% filter(coverage %in% c(30,40,100,200))
+
+R <- R %>% dplyr::group_by(coverage,replicates) %>% dplyr::summarize(n=n(),hits=sum(cover==TRUE), misses=sum(cover==FALSE)) %>% mutate(cp=1-(misses/n)) %>% ungroup()
+R <- R %>% mutate(coverage=as.factor(coverage)) %>% mutate(replicates=as.factor(replicates))
+p13<-ggplot(R, aes(x=coverage, y = cp, group=replicates, color=replicates)) + 
+  geom_line() + geom_point() +  
+  labs(y="CI coverage probability", x="mean read coverage")+  
+  scale_colour_manual(values=custom.col) + 
+  geom_hline(yintercept=0.95, linetype="dashed", alpha=0.6) +
+  scale_y_continuous(position = "right", limits=c(0.92,0.952)) +
+  annotate("text", label=paste0("n=50K/pt."), 
+                x=3.5,y=0.923,family = "CM Sans", color="black",size=4,alpha=0.6) +
+  theme(plot.caption = element_text(hjust = 0, face= "italic"), 
+        plot.title.position = "plot",
+        strip.background = element_rect(colour="white", fill="#FFFFFF"), 
+        text = element_text(family = "CM Sans", size=12),
+        plot.title = element_text(hjust = 0.2, vjust=-1, size=10),
+        legend.position = c(0.20, 0.7), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        axis.title.y.right = element_text(vjust=2.5), plot.margin=unit(c(15, 5.5, 5.5, 5.5), "points"))
+p13
+
+```
+
+
+```{r, fig.width=10, fig.height=4.5}
+fig3.top <- ggarrange(p11, p12, p13, nrow = 1, widths=c(6,2,4),labels=c("a.","b.","c."),label.x=c(0.08,-0.07,-0.04),vjust=3,hjust=-1.8)
+fig3.top
+```
+
+### Figure 3c: Recall vs. FDR
+
+#### Prepare data 
+
+```{r}
+load("data/simulations/nullmodel_grid_19.Rda")
+load("data/simulations/simulation_foreground_4.Rda")
+
+M <- R %>% group_by(coverage,replicates,combination) %>% mutate(padj=p.adjust(p,method="fdr"))  
+M <- M %>% arrange(padj) %>% mutate(total=1:n(), truepositive =cumsum(diff), falsepositive=total-truepositive, fdr=falsepositive/total, precision=truepositive/total, fpr=falsepositive/5000, recall=truepositive/500) %>% ungroup()
+
+replicatenames <- paste(c(5,10,20),"replicates")
+
+MM <- M %>% filter(combination %in% c(3,4,8,9,13,14)) %>% 
+  mutate(background=case_when((combination %in% c(3,4)) ~ "0.5/0.5", 
+                              (combination %in% c(8,9)) ~ "0.9/0.9",
+                              (combination %in% c(13,14)) ~ "0.1/0.1"))
+MM <- MM %>% mutate(difference=case_when((combination %in% c(3,8,13)) ~ "0.2", 
+                              (combination %in% c(4,9,14)) ~ "0.25"))
+
+MM <- MM %>% mutate(replicates=factor(replicates,levels=c(5,10,20), labels=replicatenames))
+MM <- MM %>% mutate(coverage=factor(coverage)) 
+MM <- MM %>% select(diff,difference,background,coverage,replicates,padj,precision,recall,fdr,fpr,total) 
+
+MM$nester <- ifelse(MM$background == "0.9/0.9", "background (5modC/5mC): 0.9/0.9",
+                     ifelse(MM$background == "0.1/0.1", "background (5modC,5mC): 0.1/0.1", "background (5modC/5mC): 0.5/0.5"))
+
+highlight_df <- MM %>% group_by(coverage, replicates, background, difference, nester) %>% filter(padj >= 0.1) %>% slice_head()
+highlight_df <- highlight_df %>% mutate(recall=ifelse(padj>0.12,NA,recall))
+```
+
+#### Plot  
+
+```{r fig.width=6*1.5, fig.height=4.5*1.5}
+
+custom.col <- c( "#C4961A", "#D16103", "#4E84C4", "#FFDB6D", "#52854C", "#F4EDCA", 
+                 "#C3D7A4", "#52854C", "#4E84C4", "#293352")
+
+p14 <- ggplot(MM, aes(x = recall, y = fdr, color=coverage)) + geom_line(size=1) + 
+  geom_hline(yintercept=0.10, linetype="dashed") +
+  geom_point(data=highlight_df, aes(x=recall,y=fdr, color=coverage), alpha=0.5, size=3) +
+  geom_text(data=highlight_df,aes(x=recall,y=fdr,label=signif(padj,digits=2)),hjust=0.5,vjust=-0.5,color="black") +
+  scale_colour_manual(values=custom.col) +
+  ggh4x::facet_nested(replicates ~ nester+difference, nest_line = TRUE) +
+  labs(title= "difference in hydroxymethylation", y = "false discovery rate", x="recall",color="mean cov.") +
+  scale_x_continuous(breaks=c(0.25,0.5, 0.75)) +
+  theme(plot.caption = element_text(hjust = 0, face= "italic"), 
+        plot.title.position = "plot",
+        strip.background = element_rect(colour="white", fill="#FFFFFF"), 
+        legend.background = element_rect(color = NA,fill=alpha('white', 0.0)),
+        text = element_text(family = "CM Sans", size=12),
+        plot.title = element_text(hjust = 0.5, size=12),
+        axis.text.x = element_text(size=8),
+        legend.position = c(0.91, 0.18), 
+        panel.grid.minor = element_blank(),plot.margin=unit(c(15, 5.5, 5.5, 5.5), "points"))
+
+p14
+```
+
+#### Export Figure 3 
+
+```{r fig.width=9, fig.height=9}
+fig3 <- ggarrange(fig3.top, p14, nrow = 2, widths=c(9), heights=c(3.5,5.5),labels=c("","d."),label.x=(0.07))
+fig3
+ggsave(filename = "figures/fig3.png", plot = fig3, device = "png")
+ggsave(filename = "figures/fig3.svg", plot = fig3, device = "svg")
+ggsave(filename = "figures/fig3.noembed.pdf", plot= fig3, device="pdf")
+embed_fonts("figures/fig3.noembed.pdf", outfile="figures/fig3.pdf")
+```
+### Supplemental Table 3: recall vs. fdr
+
+```{r}
+stab3 <- MM %>% group_by(background,difference,coverage,replicates) %>% filter(padj >= 0.1) %>% slice_head(n=1) %>% select(difference,background,coverage,replicates,padj,recall,fdr) %>% ungroup()
+stab3$replicates <- stab3$replicates %>% fct_relabel(~gsub(" replicates", "", .x))
+print(xtable(stab3, type = "latex"), file = "tables/stab3_recall_fdr_table.tex")
+stab3
+```
+####  Supplemental Figure 5: adjusted pval vs. fdr
+
+```{r fig.width=9, fig.height=9}
+custom.col <- c( "#C4961A", "#D16103", "#4E84C4", "#FFDB6D", "#52854C", "#F4EDCA", 
+                 "#C3D7A4", "#52854C", "#4E84C4", "#293352")
+set.seed(789)
+
+tmp <- MM %>% select(difference,background,coverage,replicates,padj,fdr) %>% group_by(difference,background,coverage,replicates) %>% slice_sample(n=500)
+p15 <- ggplot(tmp, aes(x=padj,y=fdr,color=coverage)) + geom_point(size=0.3) + scale_colour_manual(values=custom.col) +
+  ggh4x::facet_nested(replicates ~ background+difference, nest_line = TRUE) + 
+  labs(title= "difference in hydroxymethylation", y = "empirical false discovery rate", x="hydi fdr-adjusted pvalue",color="mean cov.") +
+  scale_x_continuous(breaks=c(0.25,0.5, 0.75)) +
+  theme(plot.caption = element_text(hjust = 0, face= "italic"), 
+        plot.title.position = "plot",
+        strip.background = element_rect(colour="white", fill="#FFFFFF"), 
+        legend.background = element_rect(color = NA,fill=alpha('white', 0.0)),
+        text = element_text(family = "CM Sans", size=12),
+        plot.title = element_text(hjust = 0.5, size=12),
+        axis.text.x = element_text(size=8),
+        legend.position = c(0.91, 0.18), 
+        panel.grid.minor = element_blank(),plot.margin=unit(c(15, 5.5, 5.5, 5.5), "points")
+        )
+
+p15
+```
+```{r fig.width=9, fig.height=9}
+
+ggsave(filename = "figures/sfig5.png", plot = p15, device = "png")
+ggsave(filename = "figures/sfig5.svg", plot = p15, device = "svg")
+ggsave(filename = "figures/sfig5.noembed.pdf", plot= p15, device="pdf")
+embed_fonts("figures/sfig5.noembed.pdf", outfile="figures/sfig5.pdf")
+```
+
+### Supplemental Figure 6 and Supplemental Table 4: Additional recall vs. fdr
+
+#### Prepare data
+
+```{r}
+load("data/simulations/nullmodel_grid_19.Rda")
+load("data/simulations/simulation_foreground_4.Rda")
+
+M <- R %>% group_by(coverage,replicates,combination) %>% mutate(padj=p.adjust(p,method="fdr"))  
+M <- M %>% arrange(padj) %>% mutate(total=1:n(), truepositive =cumsum(diff), falsepositive=total-truepositive, fdr=falsepositive/total, precision=truepositive/total, fpr=falsepositive/5000, recall=truepositive/500) %>% ungroup()
+
+replicatenames <- paste(c(5,10,20),"replicates")
+
+MM <- M %>% filter(combination %in% c(1,2,5,6,7,10,11,12,15)) %>% 
+  mutate(background=case_when((combination %in% c(1,2,5)) ~ "0.5/0.5", 
+                              (combination %in% c(6,7,10)) ~ "0.1/0.1",
+                              (combination %in% c(11,12,15)) ~ "0.9/0.9"))
+MM <- MM %>% mutate(difference=case_when((combination %in% c(1,6,11)) ~ "0.1", 
+                              (combination %in% c(2,7,12)) ~ "0.15",
+                              (combination %in% c(5,10,15)) ~ "0.3"))
+
+MM <- MM %>% mutate(replicates=factor(replicates,levels=c(5,10,20), labels=replicatenames))
+MM <- MM %>% mutate(coverage=factor(coverage)) 
+MM <- MM %>% select(diff,difference,background,coverage,replicates,padj,precision,recall,fdr,fpr,total) 
+
+MM$nester <- MM$background
+
+highlight_df <- MM %>% group_by(coverage, replicates, background, difference, nester) %>% filter(padj >= 0.1) %>% slice_head()
+highlight_df <- highlight_df %>% mutate(recall=ifelse(padj>0.11,NA,recall))
+```
+
+#### Plot
+
+```{r fig.width=6*1.5, fig.height=4.5*1.5}
+
+custom.col <- c( "#C4961A", "#D16103", "#4E84C4", "#FFDB6D", "#52854C", "#F4EDCA", 
+                 "#C3D7A4", "#52854C", "#4E84C4", "#293352")
+
+
+
+p16 <- ggplot(MM, aes(x = recall, y = fdr, color=coverage)) + geom_line(size=1) + 
+  geom_hline(yintercept=0.10, linetype="dashed") +
+  geom_point(data=highlight_df, aes(x=recall,y=fdr, color=coverage), alpha=0.5, size=3) +
+  geom_text(data=highlight_df,aes(x=recall,y=fdr,label="0.1"),hjust=0.5,vjust=-0.5,color="black") +
+  scale_colour_manual(values=custom.col) +
+  ggh4x::facet_nested(replicates ~ nester+difference, nest_line = TRUE) +
+  labs(title= "difference in hydroxymethylation", y = "false discovery rate", x="recall",color="cov.") +
+  scale_x_continuous(breaks=c(0.25,0.5, 0.75)) +
+  theme(plot.caption = element_text(hjust = 0, face= "italic"), 
+        plot.title.position = "plot",
+        strip.background = element_rect(colour="white", fill="#FFFFFF"), 
+        legend.background = element_rect(color = NA,fill=alpha('white', 0.0)),
+        text = element_text(family = "CM Sans", size=12),
+        plot.title = element_text(hjust = 0.5, size=12),
+        axis.text.x = element_text(size=8, angle=45),
+        legend.position = c(0.94, 0.18), 
+        panel.grid.minor = element_blank(),plot.margin=unit(c(15, 5.5, 5.5, 5.5), "points")
+        )
+
+p16
+```
+
+#### Export Supplemental Figure 6
+
+```{r}
+ggsave(filename = "figures/sfig6.png", plot = p16, device = "png")
+ggsave(filename = "figures/sfig6.svg", plot = p16, device = "svg")
+ggsave(filename = "figures/sfig6.noembed.pdf", plot = p16, device= "pdf")
+
+embed_fonts("figures/sfig6.noembed.pdf", outfile="figures/sfig6.pdf")
+```
+
+#### Supplemental Table 4: recall vs. fdr
+
+```{r}
+stab4 <- MM %>% group_by(background,difference,coverage,replicates) %>% filter(fdr >= 0.1) %>% slice_head(n=1) %>% select(difference,background,coverage,replicates,recall,fdr) %>% ungroup()
+stab4$replicates <- stab4$replicates %>% fct_relabel(~gsub(" replicates", "", .x))
+print(xtable(stab4, type = "latex"), file = "tables/stab4_recall_fdr_table.tex")
+stab4
+```
+
+### Supplemental Figure 7: Receiver Operator Curves
+
+#### Prepare data
+
+```{r}
+load("data/simulations/nullmodel_grid_19.Rda")
+load("data/simulations/simulation_foreground_4.Rda")
+
+M <- R %>% group_by(coverage,replicates,combination) %>% mutate(padj=p.adjust(p,method="fdr"))  
+M <- M %>% arrange(padj) %>% mutate(total=1:n(), truepositive =cumsum(diff), falsepositive=total-truepositive, fdr=falsepositive/total, precision=truepositive/total, fpr=falsepositive/5000, recall=truepositive/500) %>% ungroup()
+
+replicatenames <- paste(c(5,10,20),"replicates")
+
+MM <- M %>% filter(combination %in% c(3,4,8,9,13,14)) %>% 
+  mutate(background=case_when((combination %in% c(3,4)) ~ "0.5/0.5", 
+                              (combination %in% c(8,9)) ~ "0.9/0.9",
+                              (combination %in% c(13,14)) ~ "0.1/0.1"))
+MM <- MM %>% mutate(difference=case_when((combination %in% c(3,8,13)) ~ "0.2", 
+                              (combination %in% c(4,9,14)) ~ "0.25"))
+
+MM <- MM %>% mutate(replicates=factor(replicates,levels=c(5,10,20), labels=replicatenames))
+MM <- MM %>% mutate(coverage=factor(coverage)) 
+MM <- MM %>% select(diff,difference,background,coverage,replicates,padj,precision,recall,fdr,fpr,total) 
+
+MM$nester <- ifelse(MM$background == "0.9/0.9", "background (5modC/5mC): 0.9/0.9",
+                     ifelse(MM$background == "0.1/0.1", "background (5modC,5mC): 0.1/0.1", "background (5modC/5mC): 0.5/0.5"))
+
+highlight_df <- MM %>% group_by(coverage, replicates, background, difference, nester) %>% filter(padj >= 0.1) %>% slice_head()
+highlight_df <- highlight_df %>% mutate(recall=ifelse(padj>0.12,NA,recall))
+```
+
+
+#### Plot
+
+```{r fig.width=6*1.5, fig.height=4.5*1.5}
+
+
+p17 <- ggplot(MM, aes(d = diff, m = padj, color=coverage)) + 
+  geom_roc(increasing=FALSE, n.cuts=0) + 
+  geom_point(data=highlight_df,aes(x=fpr,y=recall, color=coverage), alpha=0.5, size=3) +
+  geom_text(data=highlight_df,aes(x=fpr,y=recall,label="0.1"),hjust=-0.5,vjust=0,color="black") +
+  style_roc() + 
+  scale_colour_manual(values=custom.col) + 
+  ggh4x::facet_nested(replicates ~ nester+difference, nest_line = TRUE) +
+  labs(title= "difference in hydroxmethylation") +
+  theme(plot.caption = element_text(hjust = 0, face= "italic"), 
+        plot.title.position = "plot",
+        strip.background = element_rect(colour="white", fill="#FFFFFF"), 
+        text = element_text(family = "CM Sans", size=12),
+        plot.title = element_text(hjust = 0.45, size=12),
+        legend.position = c(0.75, 0.18), 
+        legend.background = element_rect(linetype = 2, size = 0.3, color=1, fill=alpha('white', 0.5)),
+        ) 
+
+
+p17
+```
+
+#### Export Supplemental Figure 7
+
+```{r}
+ggsave(filename = "figures/sfig7.png", plot = p17, device = "png")
+ggsave(filename = "figures/sfig7.svg", plot = p17, device = "svg")
+ggsave(filename = "figures/sfig7.noembed.pdf", plot = p17, device= "pdf")
+
+embed_fonts("figures/sfig7.noembed.pdf", outfile="figures/sfig7.pdf")
+```
+
+### Supplemental figure 8: Runtime benchmarks
+
+#### Plot memory 
+
+```{r}
+
+custom.col <- c( "#C4961A", "#D16103", "#4E84C4", "#FFDB6D", "#52854C", "#F4EDCA", 
+                 "#C3D7A4", "#52854C", "#4E84C4", "#293352")
+
+rss <- read_delim("data/simulations/pidstat.maxrsssummary.csv", delim="\t")
+rss <- rss %>%mutate(replicates=as.factor(paste0(replicates," replicates")), coverage=as.factor(paste0("mean cov. ",coverage)), RSS=(RSS*1000)/1000000, N=N/1000 ) 
+
+rss <- rss %>% mutate(replicates = factor(replicates,levels=c("5 replicates", "10 replicates","20 replicates")))
+rss <- rss %>% mutate(coverage = factor(coverage,levels=c("mean cov. 30", "mean cov. 40","mean cov. 100", "mean cov. 200")))
+
+
+p18 <- ggplot(rss, aes(x=N, y=RSS, color=coverage)) + geom_line(alpha=0.5) + geom_point(alpha=0.5) + scale_colour_manual(values=custom.col) + labs(y="RSS (MB)") + scale_x_continuous(name ="N (x1000)", 
+                    breaks=c(10,100,500)) + theme(text = element_text(family = "CM Sans", size=11), legend.position="none") + facet_grid(replicates~coverage,scales='free')
+
+p18
+```
+
+#### Plot speed 
+
+```{r}
+spd <- read_delim("data/simulations/hyperfine.summary.csv", delim="\t")
+spd <- spd %>%mutate(replicates=as.factor(paste0(replicates," replicates")), coverage=as.factor(paste0("mean cov. ",coverage)), N=N/1000 ) 
+
+spd <- spd %>% mutate(replicates = factor(replicates,levels=c("5 replicates", "10 replicates","20 replicates")))
+spd <- spd %>% mutate(coverage = factor(coverage,levels=c("mean cov. 30", "mean cov. 40","mean cov. 100", "mean cov. 200")))
+
+p19 <- ggplot(spd, aes(x=N, y=mean, color=coverage)) + geom_line(alpha=0.5) + geom_point(alpha=0.5) + scale_colour_manual(values=custom.col) + scale_y_continuous(name="mean run time (seconds)",breaks=c(0,50,100,150,200,250,300,350)) + scale_x_continuous(name ="N (x1000)", 
+                    breaks=c(10,100,500)) + theme(text = element_text(family = "CM Sans", size=11), legend.position="none") + facet_grid(replicates~coverage)
+
+p19
+
+p20 <- ggplot(spd, aes(x=replicates, y=mean/(N), color=replicates)) + geom_boxplot() + geom_point(alpha=0.5) + labs(x="", y="runtime per CpG (ms)") + theme(text = element_text(family = "CM Sans", size=11), legend.position="none") + scale_colour_manual(values=custom.col)
+
+p20
+
+p21 <- ggplot(spd, aes(x=coverage, y=mean/(N), color=coverage)) + geom_boxplot() + geom_point(alpha=0.5) + labs(x="", y="runtime per CpG (ms)") + theme(text = element_text(family = "CM Sans", size=11), legend.position="none") + scale_colour_manual(values=custom.col)
+
+p21
+```
+#### Export Supplemental Figure 7
+
+```{r fig.width=6*1.5, fig.height=4.5*2}
+sfig8.top <- ggarrange(p18, p19, nrow = 2, widths=c(10), heights=c(10,10),labels=c("a.","b."))
+sfig8.top
+sfig8.bot <- ggarrange(p20, p21, nrow = 1, widths=c(5),heights=c(2),labels=c("c.","d."))
+sfig8.bot
+sfig8 <- ggarrange(sfig8.top,sfig8.bot,nrow=2,heights=c(10,5))
+sfig8
+
+ggsave(filename = "figures/sfig8.png", plot = sfig8, device = "png")
+ggsave(filename = "figures/sfig8.svg", plot = sfig8, device = "svg")
+ggsave(filename = "figures/sfig8.noembed.pdf", plot = sfig8, device= "pdf")
+
+embed_fonts("figures/sfig8.noembed.pdf", outfile="figures/sfig8.pdf")
+```
+
+
