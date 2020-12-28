@@ -189,8 +189,8 @@ awk '{if(NR == 1 || $15 == 3) print }' examples/output.txt > examples/output.5hm
 
 ### Complaint department
 
-steve hoffmann leibniz minus fli de
-robert schwarz leibniz minus fli de
+- steve hoffmann leibniz minus fli de
+- robert schwarz leibniz minus fli de
 
 ## Tutorial
 
