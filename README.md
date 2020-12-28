@@ -86,7 +86,7 @@ oxRRBS or oxWGBS sequencing experiments. For each group, hydi needs to be given 
 the count data obtained from the individual sequencing runs in a specific order. 
 
 The first line is a header line with column descriptions and sample identifiers. 
-Each of the following lines represents a single CpG in the genome. The first three fields of each line specify the coordinates of the CpG.
+Each of the following lines represents a single C in the genome. The first three fields of each line specify the coordinates of the C.
 
 
 All following fields contain the count data. **For each sample, there are four fields**, i.e. two for each sequencing run:
@@ -94,8 +94,8 @@ All following fields contain the count data. **For each sample, there are four f
 |  column  | description |
 | :---------------------------------------------------| :------------------------------------| 
 | chrom                            | chromosome (alphanumeric) | 
-| pos                              | position of CpG (integer) | 
-| strand                           | strand of CpG ("+" or "-") |   
+| pos                              | position of C (integer) | 
+| strand                           | strand of C ("+" or "-") |   
 |                                  |                            |
 | ID of BS-seq (coverage)          |  number of reads aligned to coordinate in BS-Seq | 
 | ID of BS-Seq (non-conversion)    | number of non-converted Cs at coordinate in BS-Seq | 
@@ -113,7 +113,7 @@ Running examples are provided with the code.
 
 ## Output data
 
-Hydi returns the results in a tab-separated text file. Each line represents a single genomic CpGs and summarizes the test data for group 1 (G1) and group 2 (G2). The
+Hydi returns the results in a tab-separated text file. Each line represents a single genomic Cs and summarizes the test data for group 1 (G1) and group 2 (G2). The
 first three fields hold their respective coordinates (see input data). The following fields 18 fields are
 described in the following table
 
@@ -157,7 +157,7 @@ chr1	434286	+	-0.069985	0.013117	0.096011	0.752027	0.977618	-0.087720	0.015558	0
 
 ### Analysis of differential 5hmC
 
-For the analysis of differential hydroxymethylation it is recommended to filter out all CpGs with overshoots, i.e. a statistically significant
+For the analysis of differential hydroxymethylation it is recommended to filter out all Cs with overshoots, i.e. a statistically significant
 **negative** methylation. This effect may be caused by coverage or alignment problems. To do this, the convenience flag `overshoot` (field 14) may be
 used. This can be done, for instance, by calling
 
@@ -189,6 +189,9 @@ awk '{if(NR == 1 || $15 == 3) print }' examples/output.txt > examples/output.5hm
 
 ### Complaint department
 
-steve bioinf uni leipzig de
+steve hoffmann leibniz minus fli de
+robert schwarz leibniz minus fli de
 
+## Tutorial
 
+The following tutorial shows the complete workflow for dhmC analysis from (ox)BS-Seq fastq data to calling differenital hydroxymethylation with hydi.
