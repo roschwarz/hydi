@@ -231,13 +231,15 @@ segemehl.x -d GRCh38.p12.fa -x GRCh38.p12.fa.segemehl.ctidx -y GRCh38.p12.fa.seg
 
 Download of the whole genome oxBS-Seq and BS-Seq data of normal and malignant human liver (GEO database, accession number GSE70090).
 
-```bash
-prefetch -X 100000000 SRRfilename
-fastq-dump --split-files SRRfilename.sra
-gzip SRRfilename*
-```
+The liver samples from https://www.ncbi.nlm.nih.gov/Traces/study/?acc=PRJNA287622&o=acc_s%3Aa are selected and the accession list is downloaded (SraAccList.txt).
+The sra-files are downloaded with prefetch and extracted with fastq-dump. For each selected sample a sra file is downloaded. In the following sample_x is used for simplicity, which means that the commands have to be done for each sample.
 
-In the following commands the fastq-files are written as sample_x, which means that the commands have to be done for each sample.
+```bash
+
+prefetch --option-file SraAccList.txt
+fastq-dump --split-files --gzip sample_x.sra
+
+```
 
 ### Analysing Data
 
