@@ -28,6 +28,8 @@ To install hydi, please make sure to have the following dependencies installed o
 Subsequently, run
 
 ```{sh}
+git clone https://github.com/Hoffmann-Lab/hydi.git
+cd hydi
 make
 ```
 
