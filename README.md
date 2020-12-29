@@ -304,7 +304,7 @@ SRR2074689	SRR2074690	tumor
 ```
 
 `vcfs2tab.py` runs with python 2.7 and needs as input the sample assignment file, the merged vcf file and a minimal coverage (-c). The minimal coverage determines how much reads must at least cover the respective C. The script generates two tables in a zipped format that contains in their name the respective group/stage.
-You will find the sampleAssignment.txt in the examples directory and `vcfs2tab.py` in the script directory. 
+You will find the sampleAssignment.txt in the examples directory and `vcfs2tab.py` in the scripts directory. 
 
 ```bash
 python vcfs2tab.py -s sampleAssignment.txt -v samples.merged.vcf.gz -c 10
