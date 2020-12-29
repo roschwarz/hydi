@@ -232,7 +232,7 @@ segemehl.x -d GRCh38.p12.fa -x GRCh38.p12.fa.segemehl.ctidx -y GRCh38.p12.fa.seg
 Download of the whole genome oxBS-Seq and BS-Seq data of normal and malignant human liver (GEO database, accession number GSE70090).
 
 The liver samples from https://www.ncbi.nlm.nih.gov/Traces/study/?acc=PRJNA287622&o=acc_s%3Aa are selected and the accession list is downloaded (SraAccList.txt).
-The sra-files are downloaded with prefetch and extracted with fastq-dump. For each selected sample a sra file is downloaded. In the following sample_x is used for simplicity, which means that the commands have to be done for each sample.
+The sra-files are downloaded with prefetch and extracted with fastq-dump. For each selected sample a sra file is downloaded. In the following, sample_x is used for simplicity, which means that the commands have to be done for each sample.
 
 ```bash
 
@@ -304,10 +304,10 @@ SRR2074689	SRR2074690	tumor
 ```
 
 `vcfs2tab.py` runs with python 2.7 and needs as input the sample assignment file, the merged vcf file and a minimal coverage (-c). The minimal coverage determines how much reads must at least cover the respective C. The script generates two tables in a zipped format that contains in their name the respective group/stage.
+You will find the sampleAssignment.txt in the examples directory and `vcfs2tab.py` in the script directory. 
 
 ```bash
-python vcfs2tab.py -s sampleAssignment.txt -v SRR20746.merged.vcf.gz -c 10
-
+python vcfs2tab.py -s sampleAssignment.txt -v samples.merged.vcf.gz -c 10
 ```
 
 **Run Hydi**
