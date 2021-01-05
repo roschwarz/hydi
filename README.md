@@ -109,8 +109,7 @@ where BS and oxBS denote the two distinct treatments briefly described above. Fo
 chrom	pos	strand	SRR2074675	SRR2074675	SRR2074676	SRR2074676	SRR2074679	SRR2074679	SRR2074680	SRR2074680
 chr1	608564	+	40	37	23	17	31	28	19	12
 ```
-
-Running examples are provided with the code.
+Should counts be unavailable for a sample, e.g. when a specific C is not covered by one of the sequencing runs, the value `NA` may be used. Running examples are provided with the code.
 
 ## Output data
 
@@ -188,7 +187,7 @@ awk '{if(NR == 1 || $15 == 3) print }' examples/output.txt > examples/output.5hm
 ./hydi.x -a examples/G1.txt.gz -b examples/G2.txt.gz > examples/test.out
 ```
 
-### Complaint department
+## Complaint department
 
 - steve hoffmann leibniz minus fli de
 - robert schwarz leibniz minus fli de
