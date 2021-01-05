@@ -1298,7 +1298,7 @@ void hydi_iter(FILE *dev, char* fn1, char* fn2, uint32_t minrep,
       hydi_counts_t tab2;
 
       hydi_parse(str1, len1, &tab1, nsamp1, count);
-      hydi_parse(str2, len2, &tab2, nsamp1, count);
+      hydi_parse(str2, len2, &tab2, nsamp2, count);
       hydi_assert(&tab1, &tab2, count); 
 
       hydi_lrt(&tab1, &tab2, minrep, eps, maxiter, chialphahalf, &test);   
