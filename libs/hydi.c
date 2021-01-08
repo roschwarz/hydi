@@ -1347,7 +1347,7 @@ void hydi_iter(FILE *dev, char* fn1, char* fn2, uint32_t minrep,
       hydi_counts_t tab2;
 
       hydi_parse(str1, len1, &tab1, nsamp1, count);
-      hydi_parse(str2, len2, &tab2, nsamp1, count);
+      hydi_parse(str2, len2, &tab2, nsamp2, count);
  
       overshoot = hydi_overshoot(&p_A1[count-1], alpha);
       hmC = hydi_hmC(&p_A1[count-1], alpha);
