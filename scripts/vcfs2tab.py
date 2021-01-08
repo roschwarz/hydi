@@ -1,3 +1,14 @@
+# Script to extract count data from individual sequencing runs and storing
+# them in group separated tables that are required for hydi.
+# The script needs a text file where the sample names are assigned to the
+# respective group and the table where the counts of the individual sequencing
+# results are stored in a merged manner (vcf format). 
+# With -c you can set a minimal Coverage to filter out samples that do not
+# reach that coverage. The Flag -m determines the number of samples that
+# hast to be at least in both groups, which means that if in a group are
+# to less samples, because of low coverage for example, the CG is not 
+# considered in both groups.
+
 
 import gzip
 import re
@@ -9,6 +20,7 @@ def parse_options():
     parser.add_argument('-s', type = argparse.FileType('r'), dest = 'samples')
     parser.add_argument('-v', type = argparse.FileType('r'), dest = 'vcfFile')
     parser.add_argument('-c', type=int, default = 10, dest='minCov')
+    parser.add_argument('-m', type = int, default = 3, dest='minSam')
 
     args = parser.parse_args() 
 
@@ -53,12 +65,14 @@ def detectColumn(header, samples):
             samples[entry] = '\t'.join(entrySplitted)
 
    
-def generateNewLine(line, samples, types, minCov):
+def generateNewLine(line, samples, types, minCov, minSam):
 
     line = line.split('\t')
     strand = line[7].split(';')[1][-1]
     newLineType1 = [line[0], line[1], strand]
     newLineType2 = [line[0], line[1], strand]
+    type1Counter = 0
+    type2Counter = 0
     
     for entry in samples:
         
@@ -67,25 +81,43 @@ def generateNewLine(line, samples, types, minCov):
         bs_non_conv = line[int(entry[3])].split(':')[4]
         oxbs_reads = line[int(entry[4])].split(':')[3]
         oxbs_non_conv = line[int(entry[4])].split(':')[4]
-        
-        if bs_reads == '.' or oxbs_reads == '.':
-            return None
-        elif int(bs_reads) < minCov or int(oxbs_reads) < minCov:
-            return None
 
-        else:
-            if entry[2] == types[0]:
-                newLineType1.append(bs_reads)
-                newLineType1.append(bs_non_conv)
-                newLineType1.append(oxbs_reads)
-                newLineType1.append(oxbs_non_conv)
-            elif entry[2] == types[1]:
-                newLineType2.append(bs_reads)
-                newLineType2.append(bs_non_conv)
-                newLineType2.append(oxbs_reads)
-                newLineType2.append(oxbs_non_conv)
+        # Count samples with a true count
+        if bs_reads != '.' and oxbs_reads != '.':
+            if int(bs_reads) > minCov and int(oxbs_reads) > minCov:
+                
+                if entry[2] == types[0]:
+
+                    type1Counter += 1
+                elif entry[2] == types[1]:
+                    type2Counter += 1
+
+        # substitute dots or counts that not reach the min Coverage 
+        # with NA for better readability and to let hydi know
+        # to ignore that samples
+        if bs_reads == '.' or int(bs_reads) <= minCov:
+            bs_reads = 'NA'
+            bs_non_conv = 'NA'
+        if oxbs_reads =='.' or int(oxbs_reads) <= minCov:
+            oxbs_reads = 'NA'
+            oxbs_non_conv = 'NA'
+
+
+        if entry[2] == types[0]:
+            newLineType1.append(bs_reads)
+            newLineType1.append(bs_non_conv)
+            newLineType1.append(oxbs_reads)
+            newLineType1.append(oxbs_non_conv)
+        elif entry[2] == types[1]:
+            newLineType2.append(bs_reads)
+            newLineType2.append(bs_non_conv)
+            newLineType2.append(oxbs_reads)
+            newLineType2.append(oxbs_non_conv)
     
-    return ['\t'.join(newLineType1), '\t'.join(newLineType2)]
+    if type1Counter >= minSam and type2Counter >= minSam:
+        return ['\t'.join(newLineType1), '\t'.join(newLineType2)]
+    else:
+        return None
 
 def generateHeader(samples, types):
 
@@ -110,7 +142,7 @@ def generateHeader(samples, types):
 
     return ['\t'.join(header1), '\t'.join(header2)]
 
-def writeGroupFiles(samples, vcfFile, minCov):
+def writeGroupFiles(samples, vcfFile, minCov, minSam):
     
     samples, types = loadSample(samples)
     lineCounter = 0
@@ -134,7 +166,7 @@ def writeGroupFiles(samples, vcfFile, minCov):
 
             if re.search('CC=CG;', line):
             
-                newLine = generateNewLine(line, samples, types, minCov)
+                newLine = generateNewLine(line, samples, types, minCov, minSam)
                 
                 if newLine:
 
@@ -143,8 +175,8 @@ def writeGroupFiles(samples, vcfFile, minCov):
 
 parser, args = parse_options() 
 
-print('Command: vcfs2tab.py -s {} -v {} -c {}'.format(args.samples.name,
-    args.vcfFile.name, args.minCov))
-writeGroupFiles(args.samples.name, args.vcfFile.name, args.minCov)
+print('Command: vcfs2tab.py -s {} -v {} -c {} -m {}'.format(args.samples.name,
+    args.vcfFile.name, args.minCov, args.minSam))
+writeGroupFiles(args.samples.name, args.vcfFile.name, args.minCov, args.minSam)
 
 
