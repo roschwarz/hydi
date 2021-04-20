@@ -56,7 +56,7 @@ We recommend using hydi on a linux machine. However, if you still want to run it
 ```{sh}
 git clone https://github.com/Hoffmann-Lab/hydi.git
 cd hydi
-make -CFLAGS=-DMAC
+make CFLAGS=-DMAC
 ```
 
 ## Parameter
