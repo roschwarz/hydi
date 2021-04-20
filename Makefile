@@ -1,6 +1,6 @@
 CC=gcc
 LD=${CC} -Xlinker -Map=.program.map -Xlinker --cref 
-CFLAGS= -Wall -pedantic -std=c99 -O3 -g -DLOCAL -DSORTEDUNMAPPED -D_LARGEFILE_SOURCE  -DFILEBUFFEREDMERGE -D_FILE_OFFSET_BITS=64 -DDBGNFO -DSHOWALIGN -DDBGLEVEL=0 -DPROGNFO -Ilibs -Ilibs/sufarray
+override CFLAGS += -Wall -pedantic -std=c99 -O3 -g -DLOCAL -DSORTEDUNMAPPED -D_LARGEFILE_SOURCE  -DFILEBUFFEREDMERGE -D_FILE_OFFSET_BITS=64 -DDBGNFO -DSHOWALIGN -DDBGLEVEL=0 -DPROGNFO -Ilibs -Ilibs/sufarray
 INC := -I include
 CTAGS = ctags > tags
 LIB = -lm -lz -L/usr/local/lib -L libs -lgmp -lgsl -lgslcblas
