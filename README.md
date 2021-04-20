@@ -304,8 +304,21 @@ SRR2074685	SRR2074686	tumor
 SRR2074689	SRR2074690	tumor
 ```
 
-`vcfs2tab.py` runs with python 2.7 and needs as input the sample assignment file, the merged vcf file and a minimal coverage (-c). The minimal coverage determines how much reads must at least cover the respective C. The script does extract all Cs in CpG context and generates two tables in a zipped format that contains in their name the respective group/stage.
-You will find the sampleAssignment.txt in the examples directory and `vcfs2tab.py` in the scripts directory. 
+`vcfs2tab.py` runs with python 2.7 and needs as input a sample assignment file, the merged vcf file and a minimal coverage (-c, default 10). The minimal coverage determines how much reads must at least cover the respective C. The minimal sample number can be set via -m (default 3), which means that if in at least one group the required sample number is not reached the respective CG is not considered overall. The counts that are smaller or equal to the required coverage (-c, default 10) are substituted by an NA, which can be handled by hydi. The script does extract all Cs in CpG context and generates two tables in a zipped format that contains in their name the respective group/stage. 
+
+```
+usage: vcfs2tab [-h] [-s SAMPLES] [-v VCFFILE] [-c MINCOV] [-m MINSAM]
+
+optional arguments:
+  -h, --help  show this help message and exit
+  -s SAMPLES  path/filename of sample assignment file
+  -v VCFFILE  path/filename of merged vfc file
+  -c MINCOV   minimal coverage (default: 10)   
+  -m MINSAM   minimal sample number per group that need to reach the required coverage (default: 3) 
+
+```
+You will find the sampleAssignment.txt for that tutorial in the examples directory and `vcfs2tab.py` in the scripts directory. 
+Run vfcs2tab.py for that specific tutorial in the following way:
 
 ```bash
 python vcfs2tab.py -s sampleAssignment.txt -v samples.merged.vcf.gz -c 10
