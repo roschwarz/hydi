@@ -13,17 +13,21 @@ The second treatment involves an oxidation reaction prior to the sodium bisulfit
 To obtain 5hmC estimates, the signals from BS and oxBS experiments are subtracted. Specifically, in hydi, we model `5hmC=5modC-5mC` employing
 binomial distributions directly based on the read counts of each experiment.
 
-
-
 ## Usage
 
-## Installing
+## Installing (Linux)
 
-To install hydi, please make sure to have the following dependencies installed on your system:
+Before installing, make sure that your system is equipped with
 
-- zlib data compression library (zlib)
-- GNU scientific library (gsl)
-- GNU Multiple Precision Arithmetic Library (gmp)
+- gcc >= 7.5.0. Other compilers might work but are untested.
+- make >= 4.2.1. Other versions should work too, but are untested.
+- git >= 2.26.2. Other versions should work too, but are untested.
+
+To install hydi, please make also sure that to have the following dependencies installed on your system (including the corresponding developer packages):
+
+- zlib data compression library (zlib >= 1.2.11)
+- GNU scientific library (gsl >= 2.6)
+- GNU Multiple Precision Arithmetic Library (gmp >= 6.2.0)
 
 Subsequently, run
 
@@ -39,7 +43,21 @@ After compilation, hit
 ./hydi.x --help
 ```
 
-to ensure the program compiled correctly.
+to ensure the program compiled correctly. The compilation of hydi should not take more than five minutes on a standard machine. Development and testing has been performed on a x86_64 GNU/Linux (OpenSuse 5.3.18-lp152.66-default). Running hydi on other operating systems such as Darwin/MacOS may require additional installations. 
+
+To run the helper-script 'vcfs2tab.py' (see below) you are additionally required to provide
+
+- python 2.7
+
+## Installing (MacOS X)
+
+We recommend using hydi on a linux machine. However, if you still want to run it on your Mac and are able to install all requirements, e.g. via homebrew or MacPorts, please install hydi with
+
+```{sh}
+git clone https://github.com/Hoffmann-Lab/hydi.git
+cd hydi
+make -CFLAGS=-DMAC
+```
 
 ## Parameter
 
@@ -186,6 +204,8 @@ awk '{if(NR == 1 || $15 == 3) print }' examples/output.txt > examples/output.5hm
 ```
 ./hydi.x -a examples/G1.txt.gz -b examples/G2.txt.gz > examples/test.out
 ```
+
+Running the provided minimum example should not take more than a few seconds on a standard linux machine.
 
 ## Complaint department
 
