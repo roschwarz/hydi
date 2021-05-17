@@ -30,7 +30,7 @@ def loadSample(assignment):
 
     samples = {}
     types = []
-    with open('sampleAssignment.txt', 'r') as input_handle:
+    with open(assignment, 'r') as input_handle:
         s = 0
         for line in input_handle:
         
@@ -64,7 +64,47 @@ def detectColumn(header, samples):
             
             samples[entry] = '\t'.join(entrySplitted)
 
-   
+def generateNewLineSingleSamp(line, samples, types, minCov, minSam):
+
+
+    line = line.split('\t')
+    strand = line[7].split(';')[1][-1]
+    newLine = [line[0], line[1], strand]
+    counter = 0
+
+    for entry in samples:
+        
+        entry = samples[entry].split('\t')
+        bs_reads = line[int(entry[3])].split(':')[3]
+        bs_non_conv = line[int(entry[3])].split(':')[4]
+        oxbs_reads = line[int(entry[4])].split(':')[3]
+        oxbs_non_conv = line[int(entry[4])].split(':')[4]
+
+        # Count samples with a true count
+        if bs_reads != '.' and oxbs_reads != '.':
+            if int(bs_reads) > minCov and int(oxbs_reads) > minCov:
+                    counter += 1
+
+        # substitute dots or counts that not reach the min Coverage 
+        # with NA for better readability and to let hydi know
+        # to ignore that samples
+        if bs_reads == '.' or int(bs_reads) <= minCov:
+            bs_reads = 'NA'
+            bs_non_conv = 'NA'
+        if oxbs_reads =='.' or int(oxbs_reads) <= minCov:
+            oxbs_reads = 'NA'
+            oxbs_non_conv = 'NA'
+
+        newLine.append(bs_reads)
+        newLine.append(bs_non_conv)
+        newLine.append(oxbs_reads)
+        newLine.append(oxbs_non_conv)
+    
+    if counter >= minSam:
+        return '\t'.join(newLine)
+    else:
+        return None
+
 def generateNewLine(line, samples, types, minCov, minSam):
 
     line = line.split('\t')
@@ -128,50 +168,94 @@ def generateHeader(samples, types):
 
         entry = samples[entry].split('\t')
         
-        if entry[2] == types[0]:
-            header1.append('{}_N'.format(entry[0]))
-            header1.append('{}_C'.format(entry[0]))
-            header1.append('{}_N'.format(entry[1]))
-            header1.append('{}_C'.format(entry[1]))
+        if len(types) == 1:
+                
+                header1.append('{}_N'.format(entry[0]))
+                header1.append('{}_C'.format(entry[0]))
+                header1.append('{}_N'.format(entry[1]))
+                header1.append('{}_C'.format(entry[1]))
         else:
+            if entry[2] == types[0]:
+                header1.append('{}_N'.format(entry[0]))
+                header1.append('{}_C'.format(entry[0]))
+                header1.append('{}_N'.format(entry[1]))
+                header1.append('{}_C'.format(entry[1]))
+            else:
 
-            header2.append('{}_N'.format(entry[0]))
-            header2.append('{}_C'.format(entry[0]))
-            header2.append('{}_N'.format(entry[1]))
-            header2.append('{}_C'.format(entry[1]))
+                header2.append('{}_N'.format(entry[0]))
+                header2.append('{}_C'.format(entry[0]))
+                header2.append('{}_N'.format(entry[1]))
+                header2.append('{}_C'.format(entry[1]))
+        
+    
+    if len(types) == 1:
+        return '\t'.join(header1)
+    else:
+        return ['\t'.join(header1), '\t'.join(header2)]
 
-    return ['\t'.join(header1), '\t'.join(header2)]
+
+def writeSingleSample(samples, vcfFile, minCov, minSam, types):
+
+    lineCounter = 0 
+
+    with gzip.open('{}.dat.gz'.format(types[0]), 'w') as output:
+
+            header = generateHeader(samples, types)
+
+            output.write(header+'\n')
+
+            for line in vcfGenerator(vcfFile):
+
+                lineCounter += 1
+
+                if lineCounter % 1000000 == 0:
+                    print('{} lines processed ... '.format(lineCounter))
+                
+                if re.search('^#CHROM', line):
+        
+                    detectColumn(line, samples)
+
+                if re.search('CC=CG;', line):
+            
+                    newLine = generateNewLineSingleSamp(line, samples, types, minCov, minSam)
+                     
+                    if newLine:
+                        output.write(newLine + '\n')
 
 def writeGroupFiles(samples, vcfFile, minCov, minSam):
     
     samples, types = loadSample(samples)
     lineCounter = 0
+    print(types)
+    if len(types) == 2:
+        with gzip.open('{}.dat.gz'.format(types[0]), 'w') as out_group1, \
+                gzip.open('{}.dat.gz'.format(types[1]), 'w') as out_group2:
 
-    with gzip.open('{}.dat.gz'.format(types[0]), 'w') as out_group1, \
-            gzip.open('{}.dat.gz'.format(types[1]), 'w') as out_group2:
+            header = generateHeader(samples, types)
 
-        header = generateHeader(samples, types)
-
-        out_group1.write(header[0]+'\n')
-        out_group2.write(header[1]+'\n')
+            out_group1.write(header[0]+'\n')
+            out_group2.write(header[1]+'\n')
     
-        for line in vcfGenerator(vcfFile):
-            lineCounter += 1
+            for line in vcfGenerator(vcfFile):
+                lineCounter += 1
 
-            if lineCounter % 1000000 == 0:
-                print('{} lines processed ... '.format(lineCounter))
-            if re.search('^#CHROM', line):
+                if lineCounter % 1000000 == 0:
+                    print('{} lines processed ... '.format(lineCounter))
+                if re.search('^#CHROM', line):
         
-                detectColumn(line, samples)
+                    detectColumn(line, samples)
 
-            if re.search('CC=CG;', line):
+                if re.search('CC=CG;', line):
             
-                newLine = generateNewLine(line, samples, types, minCov, minSam)
+                    newLine = generateNewLine(line, samples, types, minCov, minSam)
                 
-                if newLine:
+                    if newLine:
 
-                    out_group1.write(newLine[0] + '\n')
-                    out_group2.write(newLine[1] + '\n')
+                        out_group1.write(newLine[0] + '\n')
+                        out_group2.write(newLine[1] + '\n')
+    else:
+        
+        writeSingleSample(samples, vcfFile, minCov, minSam, types)
 
 parser, args = parse_options() 
 
