@@ -11,6 +11,7 @@
 
 
 import gzip
+import sys
 import re
 import argparse
 
@@ -20,6 +21,7 @@ def parse_options():
     parser.add_argument('-s', type = argparse.FileType('r'), dest = 'samples')
     parser.add_argument('-v', type = argparse.FileType('r'), dest = 'vcfFile')
     parser.add_argument('-c', type=int, default = 10, dest='minCov')
+    parser.add_argument('-cm', type=int, default = -1, dest = 'maxCov')
     parser.add_argument('-m', type = int, default = 3, dest='minSam')
 
     args = parser.parse_args() 
@@ -82,7 +84,10 @@ def generateNewLineSingleSamp(line, samples, types, minCov, minSam):
 
         # Count samples with a true count
         if bs_reads != '.' and oxbs_reads != '.':
-            if int(bs_reads) > minCov and int(oxbs_reads) > minCov:
+            if(maxCov != -1):
+                if minCov < int(bs_reads) <= maxCov and minCov < int(oxbs_reads) <= maxCov: 
+                    counter += 1 
+            elif int(bs_reads) > minCov and int(oxbs_reads) > minCov:
                     counter += 1
 
         # substitute dots or counts that not reach the min Coverage 
@@ -105,7 +110,7 @@ def generateNewLineSingleSamp(line, samples, types, minCov, minSam):
     else:
         return None
 
-def generateNewLine(line, samples, types, minCov, minSam):
+def generateNewLine(line, samples, types, minCov, maxCov, minSam):
 
     line = line.split('\t')
     strand = line[7].split(';')[1][-1]
@@ -124,7 +129,16 @@ def generateNewLine(line, samples, types, minCov, minSam):
 
         # Count samples with a true count
         if bs_reads != '.' and oxbs_reads != '.':
-            if int(bs_reads) > minCov and int(oxbs_reads) > minCov:
+            if(maxCov != -1):
+                if minCov < int(bs_reads) <= maxCov and minCov < int(oxbs_reads) <= maxCov: 
+
+                    if entry[2] == types[0]:
+
+                        type1Counter += 1
+                    elif entry[2] == types[1]:
+                        type2Counter += 1
+
+            elif int(bs_reads) > minCov and int(oxbs_reads) > minCov:
                 
                 if entry[2] == types[0]:
 
@@ -222,7 +236,7 @@ def writeSingleSample(samples, vcfFile, minCov, minSam, types):
                     if newLine:
                         output.write(newLine + '\n')
 
-def writeGroupFiles(samples, vcfFile, minCov, minSam):
+def writeGroupFiles(samples, vcfFile, minCov, maxCov, minSam):
     
     samples, types = loadSample(samples)
     lineCounter = 0
@@ -247,7 +261,8 @@ def writeGroupFiles(samples, vcfFile, minCov, minSam):
 
                 if re.search('CC=CG;', line):
             
-                    newLine = generateNewLine(line, samples, types, minCov, minSam)
+                    newLine = generateNewLine(line, samples, types, minCov,
+                            maxCov, minSam)
                 
                     if newLine:
 
@@ -259,8 +274,13 @@ def writeGroupFiles(samples, vcfFile, minCov, minSam):
 
 parser, args = parse_options() 
 
-print('Command: vcfs2tab.py -s {} -v {} -c {} -m {}'.format(args.samples.name,
-    args.vcfFile.name, args.minCov, args.minSam))
-writeGroupFiles(args.samples.name, args.vcfFile.name, args.minCov, args.minSam)
+print('Command: vcfs2tab.py -s {} -v {} -c {} -cm {} -m {}'.format(args.samples.name,
+    args.vcfFile.name, args.minCov, args.maxCov, args.minSam))
+
+if args.maxCov != -1 and args.maxCov <= args.minCov:
+    print('Your maximal Coverage is smaller than your min coverage')
+    sys.exit()
+    
+writeGroupFiles(args.samples.name, args.vcfFile.name, args.minCov, args.maxCov, args.minSam)
 
 
