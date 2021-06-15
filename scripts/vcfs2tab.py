@@ -20,6 +20,7 @@ def parse_options():
     parser=argparse.ArgumentParser(prog="vcfs2tab")
     parser.add_argument('-s', type = argparse.FileType('r'), dest = 'samples')
     parser.add_argument('-v', type = argparse.FileType('r'), dest = 'vcfFile')
+    parser.add_argument('-p', type = str, default = 'CG', dest = 'pattern')
     parser.add_argument('-c', type=int, default = 10, dest='minCov')
     parser.add_argument('-cm', type=int, default = -1, dest = 'maxCov')
     parser.add_argument('-m', type = int, default = 3, dest='minSam')
@@ -208,7 +209,7 @@ def generateHeader(samples, types):
         return ['\t'.join(header1), '\t'.join(header2)]
 
 
-def writeSingleSample(samples, vcfFile, minCov, minSam, types):
+def writeSingleSample(samples, vcfFile, minCov, minSam, types, pattern):
 
     lineCounter = 0 
 
@@ -229,14 +230,14 @@ def writeSingleSample(samples, vcfFile, minCov, minSam, types):
         
                     detectColumn(line, samples)
 
-                if re.search('CC=CG;', line):
+                if re.search('CC=%s;'%pattern, line):
             
                     newLine = generateNewLineSingleSamp(line, samples, types, minCov, minSam)
                      
                     if newLine:
                         output.write(newLine + '\n')
 
-def writeGroupFiles(samples, vcfFile, minCov, maxCov, minSam):
+def writeGroupFiles(samples, vcfFile, minCov, maxCov, minSam, pattern):
     
     samples, types = loadSample(samples)
     lineCounter = 0
@@ -259,7 +260,7 @@ def writeGroupFiles(samples, vcfFile, minCov, maxCov, minSam):
         
                     detectColumn(line, samples)
 
-                if re.search('CC=CG;', line):
+                if re.search('CC=%s;'%pattern, line):
             
                     newLine = generateNewLine(line, samples, types, minCov,
                             maxCov, minSam)
@@ -270,17 +271,18 @@ def writeGroupFiles(samples, vcfFile, minCov, maxCov, minSam):
                         out_group2.write(newLine[1] + '\n')
     else:
         
-        writeSingleSample(samples, vcfFile, minCov, minSam, types)
+        writeSingleSample(samples, vcfFile, minCov, minSam, types, pattern)
 
 parser, args = parse_options() 
 
-print('Command: vcfs2tab.py -s {} -v {} -c {} -cm {} -m {}'.format(args.samples.name,
-    args.vcfFile.name, args.minCov, args.maxCov, args.minSam))
+print('Command: vcfs2tab.py -s {} -v {} -c {} -cm {} -m {} -p {}'.format(args.samples.name,
+    args.vcfFile.name, args.minCov, args.maxCov, args.minSam, args.pattern))
 
 if args.maxCov != -1 and args.maxCov <= args.minCov:
     print('Your maximal Coverage is smaller than your min coverage')
     sys.exit()
     
-writeGroupFiles(args.samples.name, args.vcfFile.name, args.minCov, args.maxCov, args.minSam)
+writeGroupFiles(args.samples.name, args.vcfFile.name, args.minCov, args.maxCov,
+        args.minSam, args.pattern)
 
 
