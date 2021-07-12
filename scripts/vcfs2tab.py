@@ -67,7 +67,7 @@ def detectColumn(header, samples):
             
             samples[entry] = '\t'.join(entrySplitted)
 
-def generateNewLineSingleSamp(line, samples, types, minCov, minSam):
+def generateNewLineSingleSamp(line, samples, types, minCov, maxCov, minSam):
 
 
     line = line.split('\t')
@@ -209,7 +209,7 @@ def generateHeader(samples, types):
         return ['\t'.join(header1), '\t'.join(header2)]
 
 
-def writeSingleSample(samples, vcfFile, minCov, minSam, types, pattern):
+def writeSingleSample(samples, vcfFile, minCov, maxCov, minSam, types, pattern):
 
     lineCounter = 0 
 
@@ -232,7 +232,7 @@ def writeSingleSample(samples, vcfFile, minCov, minSam, types, pattern):
 
                 if re.search('CC=%s;'%pattern, line):
             
-                    newLine = generateNewLineSingleSamp(line, samples, types, minCov, minSam)
+                    newLine = generateNewLineSingleSamp(line, samples, types, minCov, maxCov, minSam)
                      
                     if newLine:
                         output.write(newLine + '\n')
@@ -271,7 +271,7 @@ def writeGroupFiles(samples, vcfFile, minCov, maxCov, minSam, pattern):
                         out_group2.write(newLine[1] + '\n')
     else:
         
-        writeSingleSample(samples, vcfFile, minCov, minSam, types, pattern)
+        writeSingleSample(samples, vcfFile, minCov, maxCov, minSam, types, pattern)
 
 parser, args = parse_options() 
 
